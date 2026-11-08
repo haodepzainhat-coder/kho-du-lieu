@@ -195,17 +195,26 @@
       z-index: 50;
     }
 
-    /* Thanh chạy tin lịch trình (Task Ticker) */
-    @keyframes ticker-scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+    /* ======================================================== */
+    /* THANH CHẠY TIN LỊCH TRÌNH VÒNG TRÒN VÔ TẬN LIỀN MẠCH    */
+    /* ======================================================== */
+    @keyframes ticker-infinite {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(-100%, 0, 0);
+      }
     }
-    .ticker-content {
+    .ticker-group {
       display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
       white-space: nowrap;
-      animation: ticker-scroll 25s linear infinite;
+      animation: ticker-infinite 30s linear infinite;
+      will-change: transform;
     }
-    .ticker-wrapper:hover .ticker-content {
+    .ticker-wrapper:hover .ticker-group {
       animation-play-state: paused;
     }
 
@@ -550,14 +559,14 @@
       </div>
     </header>
 
-    <!-- DÒNG NHỎ CHẠY LỊCH TRÌNH & HẠN CHÓT -->
+    <!-- DÒNG NHỎ CHẠY LỊCH TRÌNH & HẠN CHÓT (VÒNG LẶP LIỀN MẠCH VÔ TẬN) -->
     <div id="task-ticker-bar" class="h-7 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center overflow-hidden shrink-0 z-10 text-[11px]">
       <div class="h-full px-3 flex items-center space-x-1.5 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 font-semibold z-10 shadow-sm">
         <i class="fa-solid fa-bell text-[10px] animate-pulse"></i>
         <span class="tracking-tight">Lịch trình:</span>
       </div>
-      <div class="ticker-wrapper flex-1 overflow-hidden relative cursor-pointer" title="Rê chuột để tạm dừng • Bấm để mở Lịch trình" onclick="switchTab('tasks')">
-        <div id="ticker-track" class="ticker-content flex items-center space-x-6 px-4"></div>
+      <div class="ticker-wrapper flex-1 overflow-hidden relative cursor-pointer flex items-center" title="Rê chuột để tạm dừng • Bấm để mở Lịch trình" onclick="switchTab('tasks')">
+        <div id="ticker-track" class="flex items-center w-full"></div>
       </div>
     </div>
 
@@ -1564,18 +1573,21 @@
       }
     }
 
+    // ========================================================
+    // TẠO DÃI CHẠY TIN LỊCH TRÌNH VÒNG TRÒN VÔ TẬN (SEAMLESS)
+    // ========================================================
     function renderTaskTicker() {
       const track = document.getElementById('ticker-track');
       if (!track) return;
 
       const activeTasks = appState.tasks.filter(t => !t.done);
       if (activeTasks.length === 0) {
-        track.innerHTML = '<span class="text-zinc-400 italic">Hiện không có lịch trình hay hạn chót nào cần xử lý.</span>';
-        track.style.animation = 'none';
+        track.innerHTML = '<span class="text-zinc-400 italic px-4">Hiện không có lịch trình hay hạn chót nào cần xử lý.</span>';
         return;
       }
 
-      const itemsHtml = activeTasks.map(t => {
+      // 1. Tạo chuỗi HTML cho một chu kỳ công việc
+      const singleCycle = activeTasks.map(t => {
         const dInfo = getTaskDeadlineInfo(t.date);
         let urgentBadge = '';
         if (dInfo.isUrgent) {
@@ -1597,10 +1609,25 @@
             </span>
           </span>
         `;
-      }).join('<span class="text-zinc-300 dark:text-zinc-700 font-light px-1">•</span>');
+      }).join('<span class="text-zinc-300 dark:text-zinc-700 font-light px-2.5">•</span>');
 
-      track.innerHTML = `${itemsHtml} <span class="text-zinc-300 dark:text-zinc-700 font-light px-1">•</span> ${itemsHtml}`;
-      track.style.animation = '';
+      // 2. Nhân bản nội dung để mỗi nhóm dài tối thiểu gấp đôi màn hình, không bị hụt đoạn
+      let repeatCount = 1;
+      if (activeTasks.length === 1) repeatCount = 5;
+      else if (activeTasks.length <= 3) repeatCount = 3;
+      else if (activeTasks.length <= 5) repeatCount = 2;
+
+      let groupItems = '';
+      for (let i = 0; i < repeatCount; i++) {
+        groupItems += (groupItems ? '<span class="text-zinc-300 dark:text-zinc-700 font-light px-2.5">•</span>' : '') + singleCycle;
+      }
+      groupItems += '<span class="text-zinc-300 dark:text-zinc-700 font-light px-2.5 mr-2.5">•</span>';
+
+      // 3. Tạo 2 nhóm Twin ticker-group chạy song song nối đuôi nhau -> Vòng tròn vô tận 100% không khựng
+      track.innerHTML = `
+        <div class="ticker-group">${groupItems}</div>
+        <div class="ticker-group" aria-hidden="true">${groupItems}</div>
+      `;
     }
 
     function updateBadges() {
