@@ -5,18 +5,90 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personal Workspace Hub</title>
 
-  <!-- Favicon Logo trang web thay thế biểu tượng trái đất mặc định trên tab và bookmark trình duyệt -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='white'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='4.5' fill='none' stroke='white' stroke-width='1.6' transform='rotate(-30 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='10' ry='4.5' fill='none' stroke='white' stroke-width='1.6' transform='rotate(30 16 16)'/%3E%3C/svg%3E">
+  <!-- Bộ tạo Favicon chuẩn PNG độ nét cao bằng Canvas (Khắc phục lỗi hiện icon trái đất mặc định) -->
+  <script>
+    (function() {
+      try {
+        const cvs = document.createElement('canvas');
+        cvs.width = 64;
+        cvs.height = 64;
+        const ctx = cvs.getContext('2d');
+        if (ctx) {
+          // Nền tím bo góc mềm mại
+          const grad = ctx.createLinearGradient(0, 0, 64, 64);
+          grad.addColorStop(0, '#6366f1');
+          grad.addColorStop(1, '#8b5cf6');
+          ctx.fillStyle = grad;
+          if (ctx.roundRect) {
+            ctx.roundRect(0, 0, 64, 64, 16);
+          } else {
+            ctx.rect(0, 0, 64, 64);
+          }
+          ctx.fill();
+
+          // Tâm Orbit trắng
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(32, 32, 7, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Vòng elip xoay 1 (-35 độ)
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3.6;
+          ctx.save();
+          ctx.translate(32, 32);
+          ctx.rotate(-35 * Math.PI / 180);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 23, 9, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          // Vòng elip xoay 2 (+35 độ)
+          ctx.save();
+          ctx.translate(32, 32);
+          ctx.rotate(35 * Math.PI / 180);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 23, 9, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+
+          const pngDataUrl = cvs.toDataURL('image/png');
+          
+          // Gắn favicon PNG vào head
+          const link = document.createElement('link');
+          link.rel = 'icon';
+          link.type = 'image/png';
+          link.href = pngDataUrl;
+          document.head.appendChild(link);
+
+          const linkShortcut = document.createElement('link');
+          linkShortcut.rel = 'shortcut icon';
+          linkShortcut.type = 'image/png';
+          linkShortcut.href = pngDataUrl;
+          document.head.appendChild(linkShortcut);
+
+          const appleLink = document.createElement('link');
+          appleLink.rel = 'apple-touch-icon';
+          appleLink.href = pngDataUrl;
+          document.head.appendChild(appleLink);
+        }
+      } catch (err) {
+        console.error('Favicon generator error:', err);
+      }
+    })();
+  </script>
 
   <!-- Script đọc và áp dụng ngay Theme đã lưu để chống chớp màn hình khi tải trang -->
   <script>
     (function() {
-      const savedTheme = localStorage.getItem('hub_theme');
-      if (savedTheme === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-      }
+      try {
+        const savedTheme = localStorage.getItem('hub_theme');
+        if (savedTheme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
     })();
   </script>
 
@@ -288,7 +360,6 @@
   <!-- MODAL XEM TÀI LIỆU TRỰC TIẾP -->
   <div id="doc-viewer-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center hidden p-3 md:p-6">
     <div id="doc-viewer-content" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-5xl h-[88vh] flex flex-col shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0">
-      <!-- Viewer Header -->
       <div class="h-12 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
         <div class="flex items-center space-x-2.5 min-w-0 pr-3">
           <span id="doc-viewer-icon" class="text-sm"></span>
@@ -305,17 +376,15 @@
           </button>
         </div>
       </div>
-      <!-- Viewer Frame -->
       <div class="flex-1 bg-zinc-900 relative">
         <iframe id="doc-viewer-frame" class="w-full h-full border-0" allow="autoplay" allowfullscreen></iframe>
       </div>
     </div>
   </div>
 
-  <!-- MODAL XEM CHI TIẾT MỤC (PHÓNG TO CỠ CHỮ & SAO CHÉP NỘI DUNG) -->
+  <!-- MODAL XEM CHI TIẾT MỤC -->
   <div id="item-detail-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
     <div id="item-detail-content" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0">
-      <!-- Detail Header with Controls -->
       <div class="px-5 py-3.5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
         <div class="flex items-center space-x-2.5">
           <span id="detail-type-badge" class="text-[11px] px-2.5 py-0.5 rounded-full font-semibold border"></span>
@@ -343,7 +412,6 @@
         </div>
       </div>
 
-      <!-- Detail Body with Zoomable text -->
       <div class="flex-1 overflow-y-auto p-5 md:p-6 space-y-4 select-text">
         <div>
           <h2 id="detail-title" class="font-bold text-zinc-900 dark:text-zinc-100 leading-snug tracking-tight select-text cursor-text"></h2>
@@ -364,10 +432,8 @@
         </div>
       </div>
 
-      <!-- Detail Footer Actions -->
       <div class="px-5 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-between shrink-0">
         <span class="text-[11px] text-zinc-400">Xem chi tiết nội dung</span>
-
         <div class="flex items-center space-x-2">
           <button id="detail-edit-btn" class="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition flex items-center space-x-1.5">
             <i class="fa-solid fa-pen-to-square text-[10px]"></i>
@@ -383,17 +449,14 @@
   <!-- 1. CỘT TRÁI: THANH CHỨC NĂNG (LEFT SIDEBAR)               -->
   <!-- ======================================================== -->
   <aside id="left-sidebar" class="sidebar-smooth bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between z-20 shrink-0 overflow-hidden" style="width: 230px; min-width: 80px;">
-    <!-- Logo & Brand Header -->
     <div>
       <div class="h-14 px-3 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
         <div id="left-brand-text" class="flex items-center space-x-2.5 shrink-0 overflow-hidden transition-opacity duration-200">
-          
-          <!-- KHÔI PHỤC LẠI LOGO CŨ: ORBIT TÍM GRADIENT SANG TRỌNG -->
+          <!-- LOGO NGUYÊN BẢN: ORBIT TÍM GRADIENT -->
           <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/25">
             <i class="fa-solid fa-atom text-base"></i>
           </div>
-          
-          <!-- TÊN THƯƠNG HIỆU GỐC -->
+          <!-- TÊN THƯƠNG HIỆU -->
           <span class="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 whitespace-nowrap sidebar-label">Personal Workspace Hub</span>
         </div>
         <button id="btn-toggle-left" onclick="toggleLeftSidebar()" class="w-7 h-7 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition shrink-0" title="Thu gọn / Mở rộng">
@@ -435,7 +498,7 @@
       </nav>
     </div>
 
-    <!-- Bottom Actions / Quick Cloud Sync -->
+    <!-- Quick Cloud Sync -->
     <div class="p-2 border-t border-zinc-200 dark:border-zinc-800">
       <button onclick="syncDataToSheet(true)" class="w-full flex items-center space-x-2 px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition text-xs font-medium">
         <i class="fa-solid fa-cloud-arrow-up text-xs shrink-0"></i>
@@ -475,7 +538,7 @@
       </div>
 
       <div class="flex items-center space-x-2 shrink-0">
-        <button onclick="toggleTheme()" class="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition" title="Đổi giao diện Sáng/Tối (Tự động ghi nhớ)">
+        <button onclick="toggleTheme()" class="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition" title="Đổi giao diện Sáng/Tối">
           <i id="theme-icon" class="fa-solid fa-sun text-xs"></i>
         </button>
       </div>
@@ -677,7 +740,19 @@
     let autoSyncTimer = null;
     let searchQuery = '';
 
-    // 2. Chặn đóng tab / thoát trang khi đang trong quá trình lưu hoặc sync
+    // Hàm đọc JSON từ localStorage an toàn tuyệt đối
+    function safeGetJson(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return parsed !== null && parsed !== undefined ? parsed : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    // Chặn đóng tab / thoát trang khi đang trong quá trình lưu hoặc sync
     window.addEventListener('beforeunload', (e) => {
       if (isSavingProcess) {
         e.preventDefault();
@@ -695,49 +770,71 @@
       return [fallback || 'Chung'];
     }
 
-    // 3. Trạng thái ứng dụng
+    // 2. Thiết lập trạng thái ban đầu an toàn chống lỗi crash
+    const defaultSubcategories = {
+      tasks: ['Tất cả', 'Chung', 'Đồ án lớn', 'Ôn thi', 'Bài tập tuần'],
+      bookmarks: ['Tất cả', 'Chung', 'Học tập', 'Lập trình', 'Công cụ', 'Trường học'],
+      docs: ['Tất cả', 'Chung', 'Học kỳ 1', 'Năm 2', 'Tài liệu chung']
+    };
+
+    let loadedSubcategories = safeGetJson('hub_subcategories', defaultSubcategories);
+    if (!loadedSubcategories || typeof loadedSubcategories !== 'object') {
+      loadedSubcategories = defaultSubcategories;
+    }
+    ['tasks', 'bookmarks', 'docs'].forEach(k => {
+      if (!Array.isArray(loadedSubcategories[k])) {
+        loadedSubcategories[k] = defaultSubcategories[k];
+      }
+      if (!loadedSubcategories[k].includes('Tất cả')) loadedSubcategories[k].unshift('Tất cả');
+      if (!loadedSubcategories[k].includes('Chung')) loadedSubcategories[k].splice(1, 0, 'Chung');
+    });
+
+    let loadedTasks = safeGetJson('hub_tasks', null);
+    if (!Array.isArray(loadedTasks)) {
+      loadedTasks = [
+        { id: '1', title: 'Hoàn thành báo cáo bài tập lớn', date: '2026-11-10', priority: 'high', done: false, subcats: ['Đồ án lớn', 'Chung'], notes: 'Tham khảo tài liệu tại https://github.com' },
+        { id: '2', title: 'Ôn tập kiến thức xác suất thống kê', date: '2026-11-14', priority: 'medium', done: false, subcats: ['Ôn thi', 'Chung'], notes: 'Xem lại slide chương 4 và làm bài tập' },
+        { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, subcats: ['Bài tập tuần', 'Chung'], notes: '' }
+      ];
+    }
+
+    let loadedBookmarks = safeGetJson('hub_bookmarks', null);
+    if (!Array.isArray(loadedBookmarks)) {
+      loadedBookmarks = [
+        { id: '1', title: 'Google Drive Sinh Viên', url: 'https://drive.google.com', tag: 'Học tập', subcats: ['Học tập', 'Chung'], notes: 'Kho dữ liệu chính https://drive.google.com' },
+        { id: '2', title: 'Cổng thông tin đào tạo', url: 'https://daotao.edu.vn', tag: 'Trường học', subcats: ['Trường học', 'Chung'], notes: 'Xem lịch thi và điểm thi' },
+        { id: '3', title: 'GitHub Projects', url: 'https://github.com', tag: 'Lập trình', subcats: ['Lập trình', 'Chung'], notes: 'Xem source code đồ án' }
+      ];
+    }
+
+    let loadedDocs = safeGetJson('hub_docs', null);
+    if (!Array.isArray(loadedDocs)) {
+      loadedDocs = [
+        { id: '1', name: 'Giáo trình Cấu trúc dữ liệu.docx', link: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/preview', category: 'Học kỳ 1', subcats: ['Học kỳ 1', 'Chung'], notes: 'Chương 1 đến chương 5' },
+        { id: '2', name: 'Slide bài giảng Cơ sở dữ liệu.pptx', link: 'https://docs.google.com/presentation/d/1Zt-fFq3v89jV6_example/preview', category: 'Năm 2', subcats: ['Năm 2', 'Chung'], notes: 'Bài giảng tuần 1-8' },
+        { id: '3', name: 'Bảng điểm và tiến độ học tập.xlsx', link: 'https://docs.google.com/spreadsheets/d/1_sheet_example/preview', category: 'Năm 2', subcats: ['Năm 2', 'Chung'], notes: 'Cập nhật điểm thành phần' },
+        { id: '4', name: 'Đề cương ôn thi Tiếng Anh B2.pdf', link: 'https://drive.google.com/file/d/1_pdf_example/preview', category: 'Năm 2', subcats: ['Năm 2', 'Chung'], notes: 'Luyện đề phần Reading & Listening' }
+      ];
+    }
+
     let appState = {
       sheetUrl: localStorage.getItem('hub_sheet_url') || '',
       driveFolderUrl: localStorage.getItem('hub_drive_folder_url') || 'https://drive.google.com',
       leftWidth: parseInt(localStorage.getItem('hub_left_width')) || 230,
       leftCollapsed: false,
       currentTab: 'overview',
-      subcategories: JSON.parse(localStorage.getItem('hub_subcategories')) || {
-        tasks: ['Tất cả', 'Chung', 'Đồ án lớn', 'Ôn thi', 'Bài tập tuần'],
-        bookmarks: ['Tất cả', 'Chung', 'Học tập', 'Lập trình', 'Công cụ', 'Trường học'],
-        docs: ['Tất cả', 'Chung', 'Học kỳ 1', 'Năm 2', 'Tài liệu chung']
-      },
+      subcategories: loadedSubcategories,
       activeFilter: {
         tasks: 'Tất cả',
         bookmarks: 'Tất cả',
         docs: 'Tất cả'
       },
-      tasks: (JSON.parse(localStorage.getItem('hub_tasks')) || [
-        { id: '1', title: 'Hoàn thành báo cáo bài tập lớn', date: '2026-11-10', priority: 'high', done: false, subcats: ['Đồ án lớn'], notes: 'Tham khảo tài liệu tại https://github.com' },
-        { id: '2', title: 'Ôn tập kiến thức xác suất thống kê', date: '2026-11-14', priority: 'medium', done: false, subcats: ['Ôn thi'], notes: 'Xem lại slide chương 4 và làm bài tập' },
-        { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, subcats: ['Bài tập tuần'], notes: '' }
-      ]).map(t => ({ ...t, subcats: normalizeItemSubcats(t, 'Chung') })),
-      bookmarks: (JSON.parse(localStorage.getItem('hub_bookmarks')) || [
-        { id: '1', title: 'Google Drive Sinh Viên', url: 'https://drive.google.com', tag: 'Học tập', subcats: ['Học tập'], notes: 'Kho dữ liệu chính https://drive.google.com' },
-        { id: '2', title: 'Cổng thông tin đào tạo', url: 'https://daotao.edu.vn', tag: 'Trường học', subcats: ['Trường học'], notes: 'Xem lịch thi và điểm thi' },
-        { id: '3', title: 'GitHub Projects', url: 'https://github.com', tag: 'Lập trình', subcats: ['Lập trình'], notes: 'Xem source code đồ án' }
-      ]).map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') })),
-      docs: (JSON.parse(localStorage.getItem('hub_docs')) || [
-        { id: '1', name: 'Giáo trình Cấu trúc dữ liệu.docx', link: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/preview', category: 'Học kỳ 1', subcats: ['Học kỳ 1'], notes: 'Chương 1 đến chương 5' },
-        { id: '2', name: 'Slide bài giảng Cơ sở dữ liệu.pptx', link: 'https://docs.google.com/presentation/d/1Zt-fFq3v89jV6_example/preview', category: 'Năm 2', subcats: ['Năm 2'], notes: 'Bài giảng tuần 1-8' },
-        { id: '3', name: 'Bảng điểm và tiến độ học tập.xlsx', link: 'https://docs.google.com/spreadsheets/d/1_sheet_example/preview', category: 'Năm 2', subcats: ['Năm 2'], notes: 'Cập nhật điểm thành phần' },
-        { id: '4', name: 'Đề cương ôn thi Tiếng Anh B2.pdf', link: 'https://drive.google.com/file/d/1_pdf_example/preview', category: 'Năm 2', subcats: ['Năm 2'], notes: 'Luyện đề phần Reading & Listening' }
-      ]).map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }))
+      tasks: loadedTasks.map(t => ({ ...t, subcats: normalizeItemSubcats(t, 'Chung') })),
+      bookmarks: loadedBookmarks.map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') })),
+      docs: loadedDocs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }))
     };
 
-    // Đảm bảo mọi phân hệ luôn có mục 'Chung'
-    ['tasks', 'bookmarks', 'docs'].forEach(k => {
-      if (!appState.subcategories[k].includes('Chung')) {
-        appState.subcategories[k].splice(1, 0, 'Chung');
-      }
-    });
-
-    // 4. Khởi chạy khi DOM sẵn sàng
+    // 3. Khởi chạy khi DOM sẵn sàng
     window.addEventListener('DOMContentLoaded', () => {
       const savedTheme = localStorage.getItem('hub_theme') || 'dark';
       updateThemeUI(savedTheme === 'dark');
@@ -794,7 +891,7 @@
       renderAll();
     });
 
-    // 5. Tự động lưu dữ liệu
+    // 4. Tự động lưu dữ liệu
     function triggerAutoSave() {
       isSavingProcess = true;
       updateSyncStatusUI('saving');
@@ -807,7 +904,7 @@
         localStorage.setItem('hub_drive_folder_url', appState.driveFolderUrl);
       } catch (err) {
         console.error('Lỗi lưu LocalStorage:', err);
-        if (err.name === 'QuotaExceededError') {
+        if (err && err.name === 'QuotaExceededError') {
           alertModal('Bộ nhớ trình duyệt đã đầy', 'Dung lượng LocalStorage (5MB) đã vượt giới hạn do có tệp file thô cũ. Hãy đảm bảo bạn đã kết nối Google Apps Script để file được lưu trên Cloud Drive!');
         }
       }
@@ -903,7 +1000,7 @@
           if (Array.isArray(data.tasks)) appState.tasks = data.tasks.map(t => ({ ...t, subcats: normalizeItemSubcats(t, 'Chung') }));
           if (Array.isArray(data.bookmarks)) appState.bookmarks = data.bookmarks.map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') }));
           if (Array.isArray(data.docs)) appState.docs = data.docs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }));
-          if (data.subcategories) appState.subcategories = data.subcategories;
+          if (data.subcategories && typeof data.subcategories === 'object') appState.subcategories = data.subcategories;
 
           localStorage.setItem('hub_tasks', JSON.stringify(appState.tasks));
           localStorage.setItem('hub_bookmarks', JSON.stringify(appState.bookmarks));
@@ -935,7 +1032,7 @@
       updateSyncStatusUI('saved', 'Đã xóa link khỏi máy');
     }
 
-    // 6. Kéo chuột co giãn độ rộng thanh bên trái
+    // 5. Kéo chuột co giãn độ rộng thanh bên trái
     function initResizeDragHandlers() {
       const leftResizer = document.getElementById('left-resizer');
       const leftSidebar = document.getElementById('left-sidebar');
@@ -1157,6 +1254,22 @@
     // ========================================================
     // QUẢN LÝ MỤC NHỎ (SUB-CATEGORIES)
     // ========================================================
+    function onSubcatPillClick(el) {
+      const type = el.getAttribute('data-type');
+      const subcat = el.getAttribute('data-subcat');
+      if (type && subcat) {
+        setFilterSubcategory(type, subcat);
+      }
+    }
+
+    function onDeleteSubcatBtnClick(btn) {
+      const type = btn.getAttribute('data-type');
+      const subcat = btn.getAttribute('data-subcat');
+      if (type && subcat) {
+        deleteSubcategory(type, subcat);
+      }
+    }
+
     function renderSubcategoryBar(type) {
       const container = document.getElementById(`${type}-subcat-bar`);
       if (!container) return;
@@ -1181,7 +1294,7 @@
           <div class="subcat-pill-item inline-flex items-center space-x-1 shrink-0 px-2.5 py-1 rounded-xl text-xs font-medium cursor-pointer transition select-none ${isActive ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' : 'bg-zinc-200/70 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'}" 
             data-type="${type}"
             data-subcat="${escapeHtml(sub)}"
-            onclick="setFilterSubcategory('${type}', '${escapeHtml(sub).replace(/'/g, "\\'")}')"
+            onclick="onSubcatPillClick(this)"
             ondragenter="handleSubcatDragEnter(event)"
             ondragover="handleSubcatDragOver(event)"
             ondragleave="handleSubcatDragLeave(event)"
@@ -1190,7 +1303,7 @@
             <span class="pointer-events-none">${escapeHtml(sub)}</span>
             <span class="pointer-events-none text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-zinc-300/80 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400'}">${count}</span>
             ${(!isAll && !isDefaultChung) ? `
-              <button onclick="event.stopPropagation(); deleteSubcategory('${type}', '${escapeHtml(sub).replace(/'/g, "\\'")}')" class="hover:text-rose-400 pl-0.5 text-[10px]" title="Xóa mục nhỏ">
+              <button onclick="event.stopPropagation(); onDeleteSubcatBtnClick(this)" data-type="${type}" data-subcat="${escapeHtml(sub)}" class="hover:text-rose-400 pl-0.5 text-[10px]" title="Xóa mục nhỏ">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             ` : ''}
@@ -1250,8 +1363,16 @@
     }
 
     // ========================================================
-    // BỘ CHỌN MỤC NHỎ (TAG PILLS SELECTOR) - HOÀN THIỆN ĐẸP MẮT
+    // BỘ CHỌN MỤC NHỎ (TAG PILLS SELECTOR)
     // ========================================================
+    function onCustomSubcatPillClick(btn) {
+      const inputId = btn.getAttribute('data-input-id');
+      const val = btn.getAttribute('data-val');
+      if (inputId && val) {
+        toggleCustomSubcatPill(inputId, val, btn);
+      }
+    }
+
     function renderCustomSubcatSelector(type, selectedValues, inputId, defaultName = 'Chung') {
       const subcats = (appState.subcategories[type] || []).filter(s => s !== 'Tất cả');
       if (!subcats.includes('Chung')) {
@@ -1262,13 +1383,12 @@
         ? selectedValues 
         : [defaultName || 'Chung'];
 
-      // Luôn đảm bảo có ít nhất 'Chung' nếu rỗng
       if (currentList.length === 0) currentList = ['Chung'];
 
       const pills = subcats.map(cat => {
         const isSelected = currentList.includes(cat);
         return `
-          <button type="button" onclick="toggleCustomSubcatPill('${inputId}', '${escapeHtml(cat).replace(/'/g, "\\'")}', this)" 
+          <button type="button" data-input-id="${inputId}" data-val="${escapeHtml(cat)}" onclick="onCustomSubcatPillClick(this)"
             class="subcat-pill-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 shrink-0 ${
               isSelected 
                 ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400' 
@@ -1388,7 +1508,7 @@
       if (activeIcon) activeIcon.className = `${val === 'high' ? 'fa-solid fa-fire' : val === 'medium' ? 'fa-solid fa-bolt' : 'fa-solid fa-arrow-down'} text-[10px] text-white`;
     }
 
-    // 7. Render toàn bộ nội dung
+    // 6. Render toàn bộ nội dung
     function renderAll() {
       renderSubcategoryBar('tasks');
       renderSubcategoryBar('bookmarks');
@@ -2236,7 +2356,7 @@
       triggerAutoSave();
     }
 
-    // 8. Chuyển Tab
+    // 7. Chuyển Tab
     function switchTab(tabName) {
       appState.currentTab = tabName;
       const tabs = ['overview', 'tasks', 'bookmarks', 'docs', 'settings'];
@@ -2264,7 +2384,7 @@
       if (headerTitle) headerTitle.innerText = titleMap[tabName] || 'Workspace';
     }
 
-    // 9. Quản lý Modal tương tác
+    // 8. Quản lý Modal tương tác
     function openModal(title, bodyHtml, confirmCallback, confirmText = 'Lưu dữ liệu') {
       const container = document.getElementById('modal-container');
       const content = document.getElementById('modal-content');
@@ -2504,7 +2624,7 @@
     }
 
     // ========================================================
-    // TẢI TỆP LÊN TRỰC TIẾP TỪ MÁY & DRIVE AUTOMATION (Mặc định chọn 'Chung')
+    // TẢI TỆP LÊN TRỰC TIẾP TỪ MÁY & DRIVE AUTOMATION
     // ========================================================
     let currentSelectedFile = null;
     let currentFileBase64 = null;
@@ -2933,7 +3053,7 @@
     }
 
     // ========================================================
-    // POPUP HIỂN THỊ CODE GOOGLE APPS SCRIPT MỚI NHẤT & CHUẨN 100%
+    // POPUP HIỂN THỊ CODE GOOGLE APPS SCRIPT
     // ========================================================
     const LATEST_APPS_SCRIPT_CODE = `// HÀM 1: BẤM NÚT NÀY ĐỂ KÍCH HOẠT QUYỀN VÀ TẠO NGAY THƯ MỤC DRIVE
 function testDrivePermission() {
@@ -3046,7 +3166,7 @@ function doGet(e) {
     }
 
     function escapeHtml(str) {
-      if (!str) return '';
+      if (str === null || str === undefined) return '';
       return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
