@@ -1355,11 +1355,25 @@
 
     function deleteSubcategory(type, subcat) {
       if (subcat === 'Tất cả' || subcat === 'Chung') return;
-      appState.subcategories[type] = appState.subcategories[type].filter(s => s !== subcat);
-      if (appState.activeFilter[type] === subcat) {
-        appState.activeFilter[type] = 'Tất cả';
-      }
-      triggerAutoSave();
+      openModal(
+        'Xác nhận xóa mục nhỏ',
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-zinc-700 dark:text-zinc-200">Bạn có chắc chắn muốn xóa mục nhỏ <strong>"${escapeHtml(subcat)}"</strong> không?</p>
+            <p class="text-zinc-500">Các công việc và tài liệu thuộc mục này sẽ không bị xóa mà được bảo lưu an toàn trong mục <strong>Chung</strong>.</p>
+          </div>
+        `,
+        () => {
+          appState.subcategories[type] = appState.subcategories[type].filter(s => s !== subcat);
+          if (appState.activeFilter[type] === subcat) {
+            appState.activeFilter[type] = 'Tất cả';
+          }
+          triggerAutoSave();
+          closeModal();
+          showToastNotification(`Đã xóa mục "${subcat}"`);
+        },
+        'Xác nhận xóa'
+      );
     }
 
     // ========================================================
@@ -2418,27 +2432,67 @@
       const { type, id } = deleteTarget;
       const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
       const item = list.find(i => i.id === id);
-
-      if (isPermanent) {
-        if (type === 'tasks') appState.tasks = appState.tasks.filter(t => t.id !== id);
-        if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => b.id !== id);
-        if (type === 'docs') appState.docs = appState.docs.filter(d => d.id !== id);
-      } else {
-        const curSubcat = appState.activeFilter[type];
-        if (item && Array.isArray(item.subcats)) {
-          if (curSubcat !== 'Tất cả') {
-            item.subcats = item.subcats.filter(s => s !== curSubcat);
-          } else {
-            item.subcats.pop();
-          }
-          if (item.subcats.length === 0) {
-            item.subcats = ['Chung'];
-          }
-        }
+      if (!item) {
+        closeDeleteChoiceModal();
+        return;
       }
 
+      const itemName = item.title || item.name || 'mục này';
+      const curSubcat = appState.activeFilter[type] || 'Tất cả';
+
       closeDeleteChoiceModal();
-      triggerAutoSave();
+
+      if (isPermanent) {
+        openModal(
+          'Xác nhận xóa vĩnh viễn',
+          `
+            <div class="space-y-3 text-xs">
+              <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-start space-x-2.5">
+                <i class="fa-solid fa-triangle-exclamation text-rose-500 text-sm mt-0.5 shrink-0"></i>
+                <div class="text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  <p class="font-bold text-rose-600 dark:text-rose-400">Cảnh báo: Hành động này không thể hoàn tác!</p>
+                  <p class="mt-1">Bạn có chắc chắn muốn xóa vĩnh viễn mục <strong>"${escapeHtml(itemName)}"</strong> khỏi toàn bộ hệ thống và Cloud?</p>
+                </div>
+              </div>
+            </div>
+          `,
+          () => {
+            if (type === 'tasks') appState.tasks = appState.tasks.filter(t => t.id !== id);
+            if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => b.id !== id);
+            if (type === 'docs') appState.docs = appState.docs.filter(d => d.id !== id);
+            triggerAutoSave();
+            closeModal();
+            showToastNotification(`Đã xóa vĩnh viễn "${itemName}"`);
+          },
+          'Xóa vĩnh viễn'
+        );
+      } else {
+        openModal(
+          'Xác nhận gỡ khỏi mục',
+          `
+            <div class="space-y-2 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+              <p>Bạn có chắc chắn muốn gỡ <strong>"${escapeHtml(itemName)}"</strong> khỏi mục <strong>"${escapeHtml(curSubcat !== 'Tất cả' ? curSubcat : 'hiện tại')}"</strong> không?</p>
+              <p class="text-zinc-400">Mục này vẫn sẽ được giữ lại an toàn trong kho chung và các mục khác.</p>
+            </div>
+          `,
+          () => {
+            if (item && Array.isArray(item.subcats)) {
+              if (curSubcat !== 'Tất cả') {
+                item.subcats = item.subcats.filter(s => s !== curSubcat);
+              } else {
+                item.subcats.pop();
+              }
+              if (item.subcats.length === 0) {
+                item.subcats = ['Chung'];
+              }
+            }
+            triggerAutoSave();
+            closeModal();
+            showToastNotification(`Đã gỡ "${itemName}" khỏi mục`);
+          },
+          'Xác nhận gỡ'
+        );
+      }
     }
 
     // 7. Chuyển Tab
@@ -2483,6 +2537,11 @@
       if (confirmTextEl) confirmTextEl.innerText = confirmText;
       if (btnConfirm) {
         btnConfirm.disabled = false;
+        if (confirmText.toLowerCase().includes('xóa')) {
+          btnConfirm.className = 'px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium shadow-md shadow-rose-600/30 transition flex items-center space-x-1.5';
+        } else {
+          btnConfirm.className = 'px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-md shadow-indigo-600/30 transition flex items-center space-x-1.5';
+        }
         btnConfirm.onclick = () => {
           confirmCallback();
         };
