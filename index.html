@@ -574,8 +574,14 @@
       <!-- TAB 4: DOCS -->
       <section id="tab-docs" class="hidden space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <p class="text-xs text-zinc-500 dark:text-zinc-400">Tải tệp trực tiếp từ máy lên Drive hoặc dán liên kết (Hỗ trợ kéo thả vào mục con)</p>
+          <div>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">Tự động tải file lên thư mục <strong>"Orbit Hub Drive"</strong> trên Google Drive của bạn</p>
+          </div>
           <div class="flex items-center space-x-2">
+            <a id="drive-folder-link" href="https://drive.google.com" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-medium transition flex items-center space-x-1.5" title="Mở trang Google Drive">
+              <i class="fa-brands fa-google-drive text-emerald-500"></i>
+              <span>Vào Google Drive</span>
+            </a>
             <button onclick="openAddDocModal('upload')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1.5 shadow-emerald-600/20">
               <i class="fa-solid fa-cloud-arrow-up text-[10px]"></i>
               <span>Tải tệp lên Drive</span>
@@ -659,7 +665,7 @@
               <i class="fa-solid fa-cloud-arrow-down text-[10px]"></i>
               <span>Tải dữ liệu từ Sheet về máy này</span>
             </button>
-            <button onclick="showAppsScriptGuide()" class="px-3.5 py-1.5 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1.5">
+            <button onclick="showAppsScriptGuide()" class="px-3.5 py-1.5 bg-purple-50 dark:purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1.5">
               <i class="fa-solid fa-code text-[10px]"></i>
               <span>Xem Code Apps Script tự động tải lên Drive</span>
             </button>
@@ -698,6 +704,7 @@
     // 3. Trạng thái ứng dụng
     let appState = {
       sheetUrl: localStorage.getItem('hub_sheet_url') || '',
+      driveFolderUrl: localStorage.getItem('hub_drive_folder_url') || 'https://drive.google.com',
       leftWidth: parseInt(localStorage.getItem('hub_left_width')) || 230,
       leftCollapsed: false,
       currentTab: 'overview',
@@ -750,6 +757,11 @@
       const inputSheet = document.getElementById('setting-sheet-url');
       if (inputSheet) inputSheet.value = appState.sheetUrl;
 
+      const driveFolderLink = document.getElementById('drive-folder-link');
+      if (driveFolderLink && appState.driveFolderUrl) {
+        driveFolderLink.href = appState.driveFolderUrl;
+      }
+
       window.addEventListener('paste', handleGlobalPaste);
 
       // Tự động đóng cửa sổ chi tiết khi bấm link
@@ -791,10 +803,11 @@
         localStorage.setItem('hub_bookmarks', JSON.stringify(appState.bookmarks));
         localStorage.setItem('hub_docs', JSON.stringify(appState.docs));
         localStorage.setItem('hub_subcategories', JSON.stringify(appState.subcategories));
+        localStorage.setItem('hub_drive_folder_url', appState.driveFolderUrl);
       } catch (err) {
         console.error('Lỗi lưu LocalStorage:', err);
         if (err.name === 'QuotaExceededError') {
-          alertModal('Bộ nhớ trình duyệt đã đầy', 'Dung lượng LocalStorage (5MB) đã vượt giới hạn, thường do lưu tệp file đính kèm quá lớn. Hãy dùng link Google Drive thay vì lưu file trực tiếp.');
+          alertModal('Bộ nhớ trình duyệt đã đầy', 'Dung lượng LocalStorage (5MB) đã vượt giới hạn do có tệp file thô cũ. Hãy đảm bảo bạn đã kết nối Google Apps Script để file được lưu trên Cloud Drive!');
         }
       }
 
@@ -849,7 +862,6 @@
       fetch(appState.sheetUrl, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'sync',
           timestamp: new Date().toISOString(),
@@ -1819,7 +1831,7 @@
                     <div class="flex items-center space-x-1.5 mt-0.5 flex-wrap gap-y-1">
                       ${subcatsHtml}
                       <span class="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono">${iconInfo.label}</span>
-                      ${isDirectData ? '<span class="text-[9px] px-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-500">Tệp lưu tại máy</span>' : ''}
+                      ${isDirectData ? '<span class="text-[9px] px-1 rounded bg-amber-50 dark:bg-amber-950 text-amber-500 font-semibold">Tệp lưu tại máy</span>' : ''}
                     </div>
                   </div>
                 </div>
@@ -2277,7 +2289,7 @@
     }
 
     function alertModal(title, message) {
-      openModal(title, `<p class="leading-relaxed text-zinc-600 dark:text-zinc-300">${escapeHtml(message)}</p>`, () => {
+      openModal(title, `<p class="leading-relaxed text-zinc-600 dark:text-zinc-300 whitespace-pre-line">${escapeHtml(message)}</p>`, () => {
         closeModal();
       }, 'Đã hiểu');
     }
@@ -2537,13 +2549,13 @@
 
             ${hasScript ? `
               <div class="flex items-center space-x-2 text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60">
-                <i class="fa-solid fa-circle-check text-xs shrink-0"></i>
-                <span>Tự động đồng bộ và tải thẳng vào <strong>Google Drive</strong> của bạn khi bấm Lưu!</span>
+                <i class="fa-solid fa-cloud-arrow-up text-xs shrink-0"></i>
+                <span>Tự động tải vào thư mục <strong>"Orbit Hub Drive"</strong> trên Google Drive của bạn!</span>
               </div>
             ` : `
               <div class="flex items-center space-x-2 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
-                <i class="fa-solid fa-circle-info text-xs shrink-0"></i>
-                <span>Tệp sẽ được lưu trực tiếp trên thiết bị để bạn mở và tải về bất kỳ lúc nào.</span>
+                <i class="fa-solid fa-triangle-exclamation text-xs shrink-0"></i>
+                <span>Chưa kết nối Drive! Vui lòng vào <strong>Cài đặt & Sync</strong> dán link Apps Script để tự động tải lên Google Drive.</span>
               </div>
             `}
           </div>
@@ -2729,47 +2741,67 @@
       const confirmText = document.getElementById('modal-confirm-text');
 
       if (isFileMode && currentSelectedFile) {
-        if (confirmBtn) confirmBtn.disabled = true;
-        if (confirmText) confirmText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý & Lưu...';
-
-        let finalDocLink = currentFileBase64;
-
-        if (appState.sheetUrl && currentFileBase64) {
-          try {
-            updateSyncStatusUI('saving');
-            const base64Data = currentFileBase64.split(',')[1];
-            const mimeType = currentSelectedFile.type || 'application/octet-stream';
-
-            const response = await fetch(appState.sheetUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'upload_to_drive',
-                fileName: currentSelectedFile.name,
-                mimeType: mimeType,
-                fileBase64: base64Data
-              })
-            });
-
-            const resJson = await response.json();
-            if (resJson && resJson.url) {
-              finalDocLink = resJson.url;
-            }
-          } catch (err) {
-            console.warn('Upload lên Apps Script Drive thất bại, tự động chuyển về lưu Data URL nội bộ:', err);
-          }
+        // Kiểm tra xem đã kết nối Apps Script chưa
+        if (!appState.sheetUrl) {
+          alertModal(
+            'Chưa kết nối Google Drive!',
+            'Bạn chưa dán đường link Apps Script trong mục "Cài đặt & Sync".\n\nNếu không kết nối với Script, tệp chỉ được lưu tạm trên máy (khi mở sẽ yêu cầu tải về/mở thư mục máy). Vui lòng vào Cài đặt dán link Web App để tệp tự động tải lên Google Drive nhé!'
+          );
+          return;
         }
 
-        appState.docs.push({
-          id: Date.now().toString(),
-          name: name,
-          link: finalDocLink,
-          subcats: subcats,
-          notes: notes
-        });
+        if (confirmBtn) confirmBtn.disabled = true;
+        if (confirmText) confirmText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang tải lên Drive...';
 
-        triggerAutoSave();
-        closeModal();
+        try {
+          updateSyncStatusUI('saving');
+          const base64Data = currentFileBase64.split(',')[1];
+          const mimeType = currentSelectedFile.type || 'application/octet-stream';
+
+          // Gửi dạng text đơn giản để không kích hoạt CORS preflight bị chặn
+          const response = await fetch(appState.sheetUrl, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'upload_to_drive',
+              fileName: currentSelectedFile.name,
+              mimeType: mimeType,
+              fileBase64: base64Data
+            })
+          });
+
+          const resJson = await response.json();
+          if (resJson && resJson.status === 'success' && resJson.url) {
+            if (resJson.folderUrl) {
+              appState.driveFolderUrl = resJson.folderUrl;
+              const fLink = document.getElementById('drive-folder-link');
+              if (fLink) fLink.href = resJson.folderUrl;
+            }
+
+            appState.docs.push({
+              id: Date.now().toString(),
+              name: name,
+              link: resJson.url,
+              subcats: subcats,
+              notes: notes
+            });
+
+            triggerAutoSave();
+            closeModal();
+            showToastNotification('Đã tải và lưu tệp vào thư mục Orbit Hub Drive!');
+            return;
+          } else {
+            throw new Error(resJson.message || 'Lỗi xử lý file trên Google Drive');
+          }
+        } catch (err) {
+          console.error('Lỗi tải tệp lên Drive:', err);
+          if (confirmBtn) confirmBtn.disabled = false;
+          if (confirmText) confirmText.innerText = 'Lưu vào Drive';
+          alertModal(
+            'Tải lên Drive thất bại!',
+            'Không thể gửi file lên Google Drive. Vui lòng kiểm tra lại:\n1. Link Apps Script trong Cài đặt đã chuẩn chưa.\n2. Khi triển khai (Deploy) bạn đã chọn "Who has access: Anyone" (Bất kỳ ai) chưa.\n\nChi tiết: ' + err.message
+          );
+          return;
+        }
 
       } else {
         let link = linkInput;
@@ -2894,7 +2926,7 @@
         'Code Google Apps Script (Tự động tải lên Drive & Đồng bộ Sheet)',
         `
           <p class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-[11px] mb-2">
-            Copy đoạn code này dán vào <strong>Extensions > Apps Script</strong> trong Google Sheets của bạn rồi bấm <strong>Deploy > New deployment (Web App, Anyone)</strong> để nhận link Web App:
+            Copy đoạn code này dán vào <strong>Tiện ích mở rộng > Apps Script</strong> trong Google Sheets của bạn rồi bấm <strong>Triển khai > Lượt triển khai mới (Ứng dụng web, Bất kỳ ai)</strong>:
           </p>
           <pre class="bg-zinc-900 text-zinc-100 p-3 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed select-text cursor-text border border-zinc-800">
 function doPost(e) {
@@ -2902,17 +2934,28 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-    // 1. Tự động tạo tệp trên Google Drive khi tải lên từ Web
+    // 1. Tự động tạo thư mục 'Orbit Hub Drive' và lưu tệp vào đó
     if (data.action === 'upload_to_drive') {
+      var folderName = "Orbit Hub Drive";
+      var folders = DriveApp.getFoldersByName(folderName);
+      var folder;
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+        folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      }
+
       var decoded = Utilities.base64Decode(data.fileBase64);
       var blob = Utilities.newBlob(decoded, data.mimeType, data.fileName);
-      var file = DriveApp.createFile(blob);
+      var file = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       
       return ContentService.createTextOutput(JSON.stringify({
         status: 'success',
         url: file.getUrl(),
-        id: file.getId()
+        id: file.getId(),
+        folderUrl: folder.getUrl()
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
