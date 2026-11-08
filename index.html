@@ -618,7 +618,7 @@
       <!-- TAB 3: BOOKMARKS -->
       <section id="tab-bookmarks" class="hidden space-y-4">
         <div class="flex items-center justify-between">
-          <p class="text-xs text-zinc-500 dark:text-zinc-400">Kéo thả để sắp xếp vị trí hoặc kéo vào mục nhỏ phía trên để gán đa mục</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400">Tự động nhận diện biểu tượng Tab website • Kéo thả sắp xếp đa mục</p>
           <button onclick="openAddBookmarkModal()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1.5">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>Lưu liên kết mới</span>
@@ -801,9 +801,9 @@
     let loadedBookmarks = safeGetJson('hub_bookmarks', null);
     if (!Array.isArray(loadedBookmarks)) {
       loadedBookmarks = [
-        { id: '1', title: 'Google Drive Sinh Viên', url: 'https://drive.google.com', tag: 'Học tập', subcats: ['Học tập', 'Chung'], notes: 'Kho dữ liệu chính https://drive.google.com' },
-        { id: '2', title: 'Cổng thông tin đào tạo', url: 'https://daotao.edu.vn', tag: 'Trường học', subcats: ['Trường học', 'Chung'], notes: 'Xem lịch thi và điểm thi' },
-        { id: '3', title: 'GitHub Projects', url: 'https://github.com', tag: 'Lập trình', subcats: ['Lập trình', 'Chung'], notes: 'Xem source code đồ án' }
+        { id: '1', title: 'Pomodore', url: 'https://pomofocus.io', icon: '', subcats: ['Công cụ', 'Chung'], notes: 'Đồng hồ đếm ngược Pomodoro tập trung học tập' },
+        { id: '2', title: 'Cổng quan lí (cũ)', url: 'https://daotao.edu.vn', icon: '', subcats: ['Trường học', 'Chung'], notes: 'Cổng thông tin đào tạo sinh viên' },
+        { id: '3', title: 'Quản lí đoàn viên', url: 'https://quanlydoanvien.doanthanhnien.vn', icon: '', subcats: ['Trường học', 'Chung'], notes: 'Hệ thống nghiệp vụ quản lý đoàn viên' }
       ];
     }
 
@@ -1613,12 +1613,100 @@
       }).replace(/\n/g, '<br>');
     }
 
-    function getFaviconUrl(url) {
+    // ========================================================
+    // BỘ XỬ LÝ BIỂU TƯỢNG (FAVICON) THÔNG MINH ĐA TẦNG
+    // ========================================================
+    function getInitials(title) {
+      if (!title) return '★';
+      const clean = title.trim();
+      const words = clean.split(/\s+/);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return clean.slice(0, 2).toUpperCase();
+    }
+
+    function renderBookmarkIconHtml(b, sizeClass = 'w-8 h-8', imgSizeClass = 'w-5 h-5') {
+      // 1. Nếu người dùng tự cấu hình Icon/Logo riêng
+      if (b.icon && b.icon.trim()) {
+        const custom = b.icon.trim();
+        if (custom.startsWith('http') || custom.startsWith('data:')) {
+          return `
+            <div class="${sizeClass} rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+              <img src="${escapeHtml(custom)}" alt="" class="${imgSizeClass} object-contain">
+            </div>
+          `;
+        } else if (custom.startsWith('fa-')) {
+          return `
+            <div class="${sizeClass} rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center shrink-0 shadow-sm">
+              <i class="${escapeHtml(custom)} text-indigo-500 text-xs"></i>
+            </div>
+          `;
+        }
+      }
+
+      let cleanUrl = (b.url || '').trim();
+      const initials = getInitials(b.title);
+
+      if (!cleanUrl) {
+        return `
+          <div class="${sizeClass} rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 text-white font-bold text-[10px] shadow-sm select-none">
+            ${escapeHtml(initials)}
+          </div>
+        `;
+      }
+
+      if (!/^https?:\/\//i.test(cleanUrl)) cleanUrl = 'https://' + cleanUrl;
+
       try {
-        let domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        const parsed = new URL(cleanUrl);
+        const domain = parsed.hostname;
+        const origin = parsed.origin;
+
+        // TẦNG 1: Trực tiếp từ thư mục gốc của website (chuẩn tab trình duyệt)
+        const directFavicon = `${origin}/favicon.ico`;
+        // TẦNG 2: DuckDuckGo Icon Resolver
+        const ddgFavicon = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+        // TẦNG 3: Google Chrome High-Res Favicon API
+        const chromeFavicon = `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(cleanUrl)}&size=128`;
+
+        return `
+          <div class="${sizeClass} rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm relative">
+            <img src="${escapeHtml(directFavicon)}" 
+              alt="" 
+              class="${imgSizeClass} object-contain"
+              data-fallback-1="${escapeHtml(ddgFavicon)}"
+              data-fallback-2="${escapeHtml(chromeFavicon)}"
+              data-initials="${escapeHtml(initials)}"
+              data-step="1"
+              onerror="handleFaviconLoadError(this)">
+          </div>
+        `;
       } catch (e) {
-        return '';
+        return `
+          <div class="${sizeClass} rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 text-white font-bold text-[10px] shadow-sm select-none">
+            ${escapeHtml(initials)}
+          </div>
+        `;
+      }
+    }
+
+    function handleFaviconLoadError(img) {
+      const step = img.getAttribute('data-step') || '1';
+      if (step === '1') {
+        img.setAttribute('data-step', '2');
+        img.src = img.getAttribute('data-fallback-1');
+      } else if (step === '2') {
+        img.setAttribute('data-step', '3');
+        img.src = img.getAttribute('data-fallback-2');
+      } else {
+        // TẦNG 4: Nếu tất cả nguồn đều lỗi, tự tạo huy hiệu Monogram hiện đại
+        const initials = img.getAttribute('data-initials') || '★';
+        const parent = img.parentElement;
+        if (parent) {
+          parent.className = parent.className.replace('bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700', 'bg-gradient-to-tr from-indigo-500 to-violet-600 border-transparent');
+          parent.innerHTML = `<span class="text-white font-bold text-[10px] select-none">${escapeHtml(initials)}</span>`;
+        }
       }
     }
 
@@ -1853,7 +1941,7 @@
       }
 
       container.innerHTML = filtered.map(b => {
-        const favicon = getFaviconUrl(b.url);
+        const iconHtml = renderBookmarkIconHtml(b, 'w-8 h-8', 'w-4 h-4');
         const subcatsHtml = (b.subcats || []).map(s => `
           <span class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-500 font-medium">${escapeHtml(s)}</span>
         `).join(' ');
@@ -1869,9 +1957,7 @@
             <div>
               <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2.5 min-w-0 pr-2 cursor-pointer flex-1" onclick="openItemDetail('bookmark', '${b.id}')" title="Bấm để xem chi tiết & phóng to">
-                  <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden">
-                    <img src="${favicon}" alt="" class="w-4 h-4 object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\\'fa-solid fa-link text-zinc-400 text-xs\\\'></i>';">
-                  </div>
+                  ${iconHtml}
                   <div class="min-w-0">
                     <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate hover:text-indigo-600 block" title="${escapeHtml(b.title)}">${escapeHtml(b.title)}</p>
                     <div class="flex items-center space-x-1 mt-0.5 flex-wrap gap-y-0.5">
@@ -2028,11 +2114,10 @@
 
       if (oBookmarks) {
         oBookmarks.innerHTML = appState.bookmarks.slice(0, 3).map(b => {
-          const fav = getFaviconUrl(b.url);
           return `
             <div onclick="openItemDetail('bookmark', '${b.id}')" class="flex items-center justify-between text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 truncate py-0.5 cursor-pointer" title="Bấm để xem chi tiết">
               <div class="flex items-center space-x-2 truncate">
-                <img src="${fav}" alt="" class="w-3.5 h-3.5 shrink-0" onerror="this.src=''; this.className='hidden';">
+                ${renderBookmarkIconHtml(b, 'w-4 h-4', 'w-3 h-3')}
                 <span class="truncate">${escapeHtml(b.title)}</span>
               </div>
               <i class="fa-solid fa-arrow-up-right-from-square text-[9px] shrink-0 ml-1 text-zinc-400"></i>
@@ -2525,7 +2610,7 @@
       );
     }
 
-    // FORM THÊM & SỬA KHO LIÊN KẾT (Mặc định chọn 'Chung')
+    // FORM THÊM & SỬA KHO LIÊN KẾT (Hỗ trợ Icon/Logo tùy chọn & Mặc định chọn 'Chung')
     function openAddBookmarkModal() {
       const defaultSubcat = appState.activeFilter.bookmarks !== 'Tất cả' ? appState.activeFilter.bookmarks : 'Chung';
       openModal(
@@ -2533,11 +2618,15 @@
         `
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Tên liên kết</label>
-            <input type="text" id="modal-bm-title" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="VD: GitHub Projects">
+            <input type="text" id="modal-bm-title" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="VD: Pomodore, GitHub, Cổng đào tạo...">
           </div>
           <div>
-            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Đường dẫn URL (Tự nhận diện Logo trang)</label>
-            <input type="url" id="modal-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="https://github.com">
+            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Đường dẫn URL (Tự động nhận diện Logo Tab website)</label>
+            <input type="url" id="modal-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none font-mono" placeholder="https://pomofocus.io">
+          </div>
+          <div>
+            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Logo / Biểu tượng tùy chọn (Để trống sẽ tự động lấy theo Tab website)</label>
+            <input type="text" id="modal-bm-icon" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="Dán link ảnh logo .png, .jpg (hoặc để trống)">
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục nhỏ phân loại (Có thể chọn nhiều - Mặc định "Chung")</label>
@@ -2551,6 +2640,7 @@
         () => {
           const title = document.getElementById('modal-bm-title').value.trim();
           let url = document.getElementById('modal-bm-url').value.trim();
+          const icon = (document.getElementById('modal-bm-icon')?.value || '').trim();
           let subcats = [];
           try {
             subcats = JSON.parse(document.getElementById('modal-bm-subcats').value);
@@ -2564,7 +2654,7 @@
           }
 
           if (title && url) {
-            appState.bookmarks.push({ id: Date.now().toString(), title, url, subcats, notes });
+            appState.bookmarks.push({ id: Date.now().toString(), title, url, icon, subcats, notes });
             triggerAutoSave();
             closeModal();
           }
@@ -2585,7 +2675,11 @@
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Đường dẫn URL</label>
-            <input type="url" id="modal-edit-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${escapeHtml(bm.url)}">
+            <input type="url" id="modal-edit-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none font-mono" value="${escapeHtml(bm.url)}">
+          </div>
+          <div>
+            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Logo / Biểu tượng tùy chọn (Để trống sẽ tự động lấy từ web)</label>
+            <input type="text" id="modal-edit-bm-icon" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${escapeHtml(bm.icon || '')}" placeholder="Dán link ảnh logo .png, .jpg (hoặc để trống)">
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục nhỏ phân loại (Có thể chọn nhiều)</label>
@@ -2599,6 +2693,7 @@
         () => {
           const title = document.getElementById('modal-edit-bm-title').value.trim();
           let url = document.getElementById('modal-edit-bm-url').value.trim();
+          const icon = (document.getElementById('modal-edit-bm-icon')?.value || '').trim();
           let subcats = [];
           try {
             subcats = JSON.parse(document.getElementById('modal-edit-bm-subcats').value);
@@ -2614,6 +2709,7 @@
           if (title && url) {
             bm.title = title;
             bm.url = url;
+            bm.icon = icon;
             bm.subcats = subcats;
             bm.notes = notes;
             triggerAutoSave();
