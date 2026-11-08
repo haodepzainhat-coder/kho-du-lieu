@@ -285,7 +285,7 @@
 <body class="bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 h-screen w-screen flex overflow-hidden antialiased select-none">
 
   <!-- ======================================================== -->
-  <!-- MODAL / DIALOGS                                          -->
+  <!-- MODAL / DIALOGS CHUNG                                    -->
   <!-- ======================================================== -->
   <div id="modal-container" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div id="modal-content" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-5 shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0">
@@ -310,49 +310,55 @@
     </div>
   </div>
 
-  <!-- MODAL XÁC NHẬN XÓA 2 LỰA CHỌN -->
-  <div id="delete-choice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+  <!-- ======================================================== -->
+  <!-- MODAL HỎI XÁC NHẬN XÓA (CÓ CẢNH BÁO TRƯỚC KHI XÓA)      -->
+  <!-- ======================================================== -->
+  <div id="delete-choice-modal" class="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div id="delete-choice-content" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-5 shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0">
       <div class="flex items-center space-x-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-        <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center text-rose-600 shrink-0">
-          <i class="fa-solid fa-trash-can text-sm"></i>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-500 shrink-0">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
         </div>
-        <div>
-          <h3 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">Tùy chọn xóa</h3>
-          <p id="delete-target-title" class="text-xs text-zinc-400 truncate max-w-xs"></p>
+        <div class="min-w-0 flex-1">
+          <h3 class="font-bold text-sm text-zinc-900 dark:text-zinc-100">Xác nhận thao tác xóa</h3>
+          <p id="delete-target-title" class="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5 font-medium"></p>
         </div>
       </div>
 
-      <div class="py-4 space-y-2.5 text-xs">
-        <p class="text-zinc-600 dark:text-zinc-300">Vui lòng chọn cách bạn muốn xóa mục này:</p>
+      <div class="py-4 space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <p>Bạn có chắc chắn muốn xóa mục này? Vui lòng chọn cách thức xóa bên dưới:</p>
+        </div>
         
         <!-- Nút lựa chọn 1: Xóa khỏi mục hiện tại -->
-        <button id="btn-delete-from-category" class="w-full text-left p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500 bg-zinc-50 dark:bg-zinc-800/60 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition group">
+        <button id="btn-delete-from-category" class="w-full text-left p-3.5 rounded-xl border border-zinc-200 dark:border-zinc-700/80 hover:border-amber-500 bg-white dark:bg-zinc-800 hover:bg-amber-50/60 dark:hover:bg-amber-950/30 transition group shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-amber-600 flex items-center gap-1.5">
-              <i class="fa-solid fa-folder-minus text-amber-500"></i>
-              <span>1. Xóa khỏi mục hiện tại</span>
+            <span class="font-bold text-xs text-zinc-800 dark:text-zinc-200 group-hover:text-amber-600 flex items-center gap-2">
+              <i class="fa-solid fa-folder-minus text-amber-500 text-sm"></i>
+              <span>1. Chỉ gỡ khỏi mục hiện tại</span>
             </span>
-            <span class="text-[10px] text-zinc-400">Giữ ở các mục khác</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-500">Giữ dữ liệu</span>
           </div>
-          <p class="text-[11px] text-zinc-500 mt-1">Chỉ gỡ liên kết khỏi mục đang xem, dữ liệu vẫn còn trong kho chung và các mục khác.</p>
+          <p class="text-[11px] text-zinc-500 mt-1.5 pl-5 leading-relaxed">Chỉ gỡ liên kết khỏi mục đang xem. Nội dung vẫn được lưu an toàn trong mục <strong>Chung</strong> và các mục khác.</p>
         </button>
 
         <!-- Nút lựa chọn 2: Xóa vĩnh viễn -->
-        <button id="btn-delete-permanently" class="w-full text-left p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-rose-500 bg-zinc-50 dark:bg-zinc-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition group">
+        <button id="btn-delete-permanently" class="w-full text-left p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition group shadow-sm">
           <div class="flex items-center justify-between">
-            <span class="font-semibold text-zinc-800 dark:text-zinc-200 group-hover:text-rose-600 flex items-center gap-1.5">
-              <i class="fa-solid fa-trash-xmark text-rose-500"></i>
-              <span>2. Xóa vĩnh viễn</span>
+            <span class="font-bold text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <i class="fa-solid fa-trash-xmark text-rose-500 text-sm"></i>
+              <span>2. Xóa vĩnh viễn hoàn toàn</span>
             </span>
-            <span class="text-[10px] text-rose-500 font-bold">Xóa hẳn</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/80 text-rose-600 dark:text-rose-300 font-bold">Xóa hẳn</span>
           </div>
-          <p class="text-[11px] text-zinc-500 mt-1">Xóa hoàn toàn mục này khỏi hệ thống cơ sở dữ liệu trên máy và Cloud.</p>
+          <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 pl-5 leading-relaxed">Xóa hoàn toàn khỏi cơ sở dữ liệu trên thiết bị này và cả trên Google Cloud Sheet.</p>
         </button>
       </div>
 
-      <div class="flex justify-end pt-2 border-t border-zinc-200 dark:border-zinc-800">
-        <button onclick="closeDeleteChoiceModal()" class="px-3.5 py-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 text-xs font-medium transition">Đóng lại</button>
+      <div class="flex justify-end pt-3 border-t border-zinc-200 dark:border-zinc-800">
+        <button onclick="closeDeleteChoiceModal()" class="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold transition">
+          Hủy bỏ (Giữ lại mục này)
+        </button>
       </div>
     </div>
   </div>
@@ -1641,7 +1647,6 @@
     }
 
     function renderBookmarkIconHtml(b, sizeClass = 'w-8 h-8', imgSizeClass = 'w-5 h-5') {
-      // 1. Nếu người dùng tự cấu hình Icon/Logo riêng
       if (b.icon && b.icon.trim()) {
         const custom = b.icon.trim();
         if (custom.startsWith('http') || custom.startsWith('data:')) {
@@ -1677,11 +1682,8 @@
         const domain = parsed.hostname;
         const origin = parsed.origin;
 
-        // TẦNG 1: Trực tiếp từ thư mục gốc của website (chuẩn tab trình duyệt)
         const directFavicon = `${origin}/favicon.ico`;
-        // TẦNG 2: DuckDuckGo Icon Resolver
         const ddgFavicon = `https://icons.duckduckgo.com/ip3/${domain}.ico`;
-        // TẦNG 3: Google Chrome High-Res Favicon API
         const chromeFavicon = `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(cleanUrl)}&size=128`;
 
         return `
@@ -1714,7 +1716,6 @@
         img.setAttribute('data-step', '3');
         img.src = img.getAttribute('data-fallback-2');
       } else {
-        // TẦNG 4: Nếu tất cả nguồn đều lỗi, tự tạo huy hiệu Monogram hiện đại
         const initials = img.getAttribute('data-initials') || '★';
         const parent = img.parentElement;
         if (parent) {
@@ -1922,7 +1923,7 @@
             <button onclick="openEditTaskModal('${t.id}')" class="text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Sửa công việc">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
-            <button onclick="openDeleteChoiceModal('tasks', '${t.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa công việc (2 tùy chọn)">
+            <button onclick="openDeleteChoiceModal('tasks', '${t.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa công việc (Hỏi trước khi xóa)">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
@@ -1983,7 +1984,7 @@
                   <button onclick="openEditBookmarkModal('${b.id}')" class="text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Sửa liên kết">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
-                  <button onclick="openDeleteChoiceModal('bookmarks', '${b.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa liên kết (2 tùy chọn)">
+                  <button onclick="openDeleteChoiceModal('bookmarks', '${b.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa liên kết (Hỏi trước khi xóa)">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
@@ -2069,7 +2070,7 @@
                   <button onclick="openEditDocModal('${d.id}')" class="text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Sửa tài liệu">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
-                  <button onclick="openDeleteChoiceModal('docs', '${d.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa tài liệu (2 tùy chọn)">
+                  <button onclick="openDeleteChoiceModal('docs', '${d.id}')" class="text-zinc-400 hover:text-rose-500 transition p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs" title="Xóa tài liệu (Hỏi trước khi xóa)">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
@@ -2374,15 +2375,16 @@
     }
 
     // ========================================================
-    // QUẢN LÝ XÓA MỤC VỚI 2 LỰA CHỌN
+    // QUẢN LÝ XÓA MỤC: LUÔN HỎI XÁC NHẬN RÕ RÀNG TRƯỚC KHI XÓA
     // ========================================================
     let deleteTarget = null;
 
     function openDeleteChoiceModal(type, id) {
-      deleteTarget = { type, id };
       const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
-      const item = list.find(i => i.id === id);
+      const item = list.find(i => String(i.id) === String(id));
       if (!item) return;
+
+      deleteTarget = { type, id: String(id), item };
 
       const modal = document.getElementById('delete-choice-modal');
       const content = document.getElementById('delete-choice-content');
@@ -2390,11 +2392,13 @@
       const btnFromCategory = document.getElementById('btn-delete-from-category');
       const btnPermanently = document.getElementById('btn-delete-permanently');
 
-      if (titleEl) titleEl.innerText = item.title || item.name || '';
+      const itemName = item.title || item.name || 'Mục này';
+      if (titleEl) titleEl.innerText = `"${itemName}"`;
 
       const currentActiveSubcat = appState.activeFilter[type] || 'Tất cả';
       const hasMultipleSubcats = Array.isArray(item.subcats) && item.subcats.length > 1;
 
+      // Nếu đang ở tab Tất cả và item chỉ có 1 mục duy nhất -> ẩn lựa chọn gỡ mục để tránh hiểu lầm
       if (currentActiveSubcat === 'Tất cả' && !hasMultipleSubcats) {
         btnFromCategory.classList.add('opacity-50', 'pointer-events-none');
       } else {
@@ -2429,50 +2433,55 @@
 
     function executeDelete(isPermanent) {
       if (!deleteTarget) return;
-      const { type, id } = deleteTarget;
-      const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
-      const item = list.find(i => i.id === id);
-      if (!item) {
-        closeDeleteChoiceModal();
-        return;
-      }
-
+      const { type, id, item } = deleteTarget;
       const itemName = item.title || item.name || 'mục này';
       const curSubcat = appState.activeFilter[type] || 'Tất cả';
 
-      closeDeleteChoiceModal();
+      // Đóng popup lựa chọn trước khi mở xác nhận cuối
+      const modal = document.getElementById('delete-choice-modal');
+      const content = document.getElementById('delete-choice-content');
+      content.classList.remove('scale-100', 'opacity-100');
+      content.classList.add('scale-95', 'opacity-0');
+      modal.classList.add('hidden');
 
       if (isPermanent) {
+        // BƯỚC HỎI XÁC NHẬN NGUY HIỂM: CẢNH BÁO ĐỎ
         openModal(
-          'Xác nhận xóa vĩnh viễn',
+          'Cảnh báo: Xác nhận xóa vĩnh viễn',
           `
             <div class="space-y-3 text-xs">
-              <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-start space-x-2.5">
-                <i class="fa-solid fa-triangle-exclamation text-rose-500 text-sm mt-0.5 shrink-0"></i>
-                <div class="text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                  <p class="font-bold text-rose-600 dark:text-rose-400">Cảnh báo: Hành động này không thể hoàn tác!</p>
-                  <p class="mt-1">Bạn có chắc chắn muốn xóa vĩnh viễn mục <strong>"${escapeHtml(itemName)}"</strong> khỏi toàn bộ hệ thống và Cloud?</p>
+              <div class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-900 flex items-start space-x-3">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5 shrink-0 animate-pulse"></i>
+                <div class="text-zinc-700 dark:text-zinc-200 leading-relaxed">
+                  <p class="font-bold text-rose-600 dark:text-rose-400 text-sm">Hành động này KHÔNG THỂ hoàn tác!</p>
+                  <p class="mt-1">Bạn có thực sự chắc chắn muốn xóa vĩnh viễn mục <strong>"${escapeHtml(itemName)}"</strong> khỏi toàn bộ hệ thống cơ sở dữ liệu và Cloud không?</p>
                 </div>
               </div>
             </div>
           `,
           () => {
-            if (type === 'tasks') appState.tasks = appState.tasks.filter(t => t.id !== id);
-            if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => b.id !== id);
-            if (type === 'docs') appState.docs = appState.docs.filter(d => d.id !== id);
+            if (type === 'tasks') appState.tasks = appState.tasks.filter(t => String(t.id) !== String(id));
+            if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => String(b.id) !== String(id));
+            if (type === 'docs') appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
+            
             triggerAutoSave();
             closeModal();
             showToastNotification(`Đã xóa vĩnh viễn "${itemName}"`);
+            deleteTarget = null;
           },
           'Xóa vĩnh viễn'
         );
       } else {
+        // BƯỚC HỎI XÁC NHẬN GỠ MỤC
+        const targetSubcatName = curSubcat !== 'Tất cả' ? curSubcat : (item.subcats?.[item.subcats.length - 1] || 'mục hiện tại');
         openModal(
           'Xác nhận gỡ khỏi mục',
           `
-            <div class="space-y-2 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-              <p>Bạn có chắc chắn muốn gỡ <strong>"${escapeHtml(itemName)}"</strong> khỏi mục <strong>"${escapeHtml(curSubcat !== 'Tất cả' ? curSubcat : 'hiện tại')}"</strong> không?</p>
-              <p class="text-zinc-400">Mục này vẫn sẽ được giữ lại an toàn trong kho chung và các mục khác.</p>
+            <div class="space-y-2 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
+              <p>Bạn có chắc chắn muốn gỡ <strong>"${escapeHtml(itemName)}"</strong> khỏi mục <strong>"${escapeHtml(targetSubcatName)}"</strong> không?</p>
+              <div class="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[11px]">
+                <i class="fa-solid fa-circle-info mr-1"></i>Mục này vẫn được lưu an toàn trong kho chung và các mục khác của bạn.
+              </div>
             </div>
           `,
           () => {
@@ -2488,7 +2497,8 @@
             }
             triggerAutoSave();
             closeModal();
-            showToastNotification(`Đã gỡ "${itemName}" khỏi mục`);
+            showToastNotification(`Đã gỡ "${itemName}" khỏi mục "${targetSubcatName}"`);
+            deleteTarget = null;
           },
           'Xác nhận gỡ'
         );
@@ -2617,7 +2627,7 @@
     }
 
     function openEditTaskModal(id) {
-      const task = appState.tasks.find(t => t.id === id);
+      const task = appState.tasks.find(t => String(t.id) === String(id));
       if (!task) return;
 
       openModal(
@@ -2722,7 +2732,7 @@
     }
 
     function openEditBookmarkModal(id) {
-      const bm = appState.bookmarks.find(b => b.id === id);
+      const bm = appState.bookmarks.find(b => String(b.id) === String(id));
       if (!bm) return;
 
       openModal(
@@ -3104,7 +3114,7 @@
     }
 
     function openEditDocModal(id) {
-      const doc = appState.docs.find(d => d.id === id);
+      const doc = appState.docs.find(d => String(d.id) === String(id));
       if (!doc) return;
 
       openModal(
@@ -3157,7 +3167,7 @@
     }
 
     function toggleTaskDone(id) {
-      const task = appState.tasks.find(t => t.id === id);
+      const task = appState.tasks.find(t => String(t.id) === String(id));
       if (task) {
         task.done = !task.done;
         triggerAutoSave();
