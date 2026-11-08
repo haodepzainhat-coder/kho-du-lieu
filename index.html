@@ -862,6 +862,9 @@
       fetch(appState.sheetUrl, {
         method: 'POST',
         mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
         body: JSON.stringify({
           action: 'sync',
           timestamp: new Date().toISOString(),
@@ -2745,7 +2748,7 @@
         if (!appState.sheetUrl) {
           alertModal(
             'Chưa kết nối Google Drive!',
-            'Bạn chưa dán đường link Apps Script trong mục "Cài đặt & Sync".\n\nNếu không kết nối với Script, tệp chỉ được lưu tạm trên máy (khi mở sẽ yêu cầu tải về/mở thư mục máy). Vui lòng vào Cài đặt dán link Web App để tệp tự động tải lên Google Drive nhé!'
+            'Bạn chưa dán đường link Apps Script trong mục "Cài đặt & Sync".\n\nVui lòng vào Cài đặt dán link Web App để tệp tự động tải lên Google Drive nhé!'
           );
           return;
         }
@@ -2758,9 +2761,11 @@
           const base64Data = currentFileBase64.split(',')[1];
           const mimeType = currentSelectedFile.type || 'application/octet-stream';
 
-          // Gửi dạng text đơn giản để không kích hoạt CORS preflight bị chặn
           const response = await fetch(appState.sheetUrl, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8'
+            },
             body: JSON.stringify({
               action: 'upload_to_drive',
               fileName: currentSelectedFile.name,
@@ -2797,8 +2802,8 @@
           if (confirmBtn) confirmBtn.disabled = false;
           if (confirmText) confirmText.innerText = 'Lưu vào Drive';
           alertModal(
-            'Tải lên Drive thất bại!',
-            'Không thể gửi file lên Google Drive. Vui lòng kiểm tra lại:\n1. Link Apps Script trong Cài đặt đã chuẩn chưa.\n2. Khi triển khai (Deploy) bạn đã chọn "Who has access: Anyone" (Bất kỳ ai) chưa.\n\nChi tiết: ' + err.message
+            'Không thể tải lên Drive!',
+            'Nguyên nhân chính: Google chưa được cấp quyền Drive hoặc Apps Script chưa chọn "Phiên bản mới" khi Triển khai.\n\nCách sửa trong 30 giây:\n1. Mở Apps Script, chọn hàm "testDrivePermission" rồi bấm nút [Chạy].\n2. Bấm Cho phép quyền truy cập khi Google hỏi.\n3. Bấm Triển khai > Quản lý triển khai > Bút chì > chọn "Phiên bản mới" > Triển khai.\n\n(Xem chi tiết trong cẩm nang hướng dẫn).'
           );
           return;
         }
@@ -2926,25 +2931,27 @@
         'Code Google Apps Script (Tự động tải lên Drive & Đồng bộ Sheet)',
         `
           <p class="text-zinc-600 dark:text-zinc-300 leading-relaxed text-[11px] mb-2">
-            Copy đoạn code này dán vào <strong>Tiện ích mở rộng > Apps Script</strong> trong Google Sheets của bạn rồi bấm <strong>Triển khai > Lượt triển khai mới (Ứng dụng web, Bất kỳ ai)</strong>:
+            Copy đoạn code này dán vào <strong>Tiện ích mở rộng > Apps Script</strong> trong Google Sheets của bạn. Hãy chọn hàm <code>testDrivePermission</code> và bấm nút <strong>Chạy (Run)</strong> 1 lần để cấp quyền Google Drive:
           </p>
           <pre class="bg-zinc-900 text-zinc-100 p-3 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed select-text cursor-text border border-zinc-800">
+function testDrivePermission() {
+  var folderName = "Orbit Hub Drive";
+  var folders = DriveApp.getFoldersByName(folderName);
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  Logger.log("Thành công! Thư mục đã được tạo: " + folder.getUrl());
+}
+
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-    // 1. Tự động tạo thư mục 'Orbit Hub Drive' và lưu tệp vào đó
     if (data.action === 'upload_to_drive') {
       var folderName = "Orbit Hub Drive";
       var folders = DriveApp.getFoldersByName(folderName);
-      var folder;
-      if (folders.hasNext()) {
-        folder = folders.next();
-      } else {
-        folder = DriveApp.createFolder(folderName);
-        folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      }
+      var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+      folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
       var decoded = Utilities.base64Decode(data.fileBase64);
       var blob = Utilities.newBlob(decoded, data.mimeType, data.fileName);
@@ -2959,7 +2966,6 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 2. Đồng bộ danh sách công việc, link, tài liệu
     if (data.action === 'sync') {
       sheet.getRange("A1").setValue(JSON.stringify(data));
       return ContentService.createTextOutput(JSON.stringify({ status: 'success' })).setMimeType(ContentService.MimeType.JSON);
