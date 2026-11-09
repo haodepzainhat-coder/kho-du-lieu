@@ -49,7 +49,6 @@
           ctx.restore();
 
           const pngDataUrl = cvs.toDataURL('image/png');
-          
           const link = document.createElement('link');
           link.rel = 'icon';
           link.type = 'image/png';
@@ -61,15 +60,8 @@
           linkShortcut.type = 'image/png';
           linkShortcut.href = pngDataUrl;
           document.head.appendChild(linkShortcut);
-
-          const appleLink = document.createElement('link');
-          appleLink.rel = 'apple-touch-icon';
-          appleLink.href = pngDataUrl;
-          document.head.appendChild(appleLink);
         }
-      } catch (err) {
-        console.error('Favicon generator error:', err);
-      }
+      } catch (err) {}
     })();
   </script>
 
@@ -117,7 +109,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
-    /* Phóng to tỷ lệ chữ và giao diện trên máy tính */
     html {
       font-size: 15.5px;
     }
@@ -140,7 +131,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Tự động nâng cấp các cỡ chữ nhỏ thành tỷ lệ rem co giãn rõ ràng */
     .text-\[9px\] {
       font-size: 0.72rem !important;
       line-height: 1rem !important;
@@ -204,7 +194,6 @@
       z-index: 50;
     }
 
-    /* THANH CHẠY TIN LỊCH TRÌNH VÒNG TRÒN VÔ TẬN LIỀN MẠCH */
     @keyframes ticker-infinite {
       0% {
         transform: translate3d(0, 0, 0);
@@ -278,7 +267,7 @@
 </head>
 <body class="bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 h-screen w-screen flex overflow-hidden antialiased select-none">
 
-  <!-- LỚP PHỦ MÀN HÌNH DI ĐỘNG KHI MỞ MENU DRAWER -->
+  <!-- LỚP PHỦ MÀN HÌNH DI ĐỘNG -->
   <div id="mobile-sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden transition-opacity opacity-0"></div>
 
   <!-- MODAL / DIALOGS CHUNG -->
@@ -339,7 +328,7 @@
             </span>
             <span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/80 text-rose-600 dark:text-rose-300 font-bold">Xóa hẳn</span>
           </div>
-          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị và Google Sheet.</p>
+          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị và danh sách lưu trữ.</p>
         </button>
       </div>
 
@@ -410,9 +399,7 @@
     </div>
   </div>
 
-  <!-- 1. CỘT TRÁI / MENU ĐIỀU HƯỚNG: 
-       - Desktop: Cột trái co giãn bình thường.
-       - Mobile: Ẩn hoàn toàn (-translate-x-full), bấm nút 3 gạch mới trượt ra, chọn xong tự ẩn đi! -->
+  <!-- 1. CỘT TRÁI / MENU ĐIỀU HƯỚNG -->
   <aside id="left-sidebar" class="sidebar-smooth fixed inset-y-0 left-0 z-50 md:static bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 overflow-hidden shadow-2xl md:shadow-none -translate-x-full md:translate-x-0" style="width: 255px; min-width: 80px;">
     <div>
       <div class="h-14 px-3 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
@@ -423,7 +410,6 @@
           <span class="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-100 whitespace-nowrap sidebar-label">Orbit Workspace</span>
         </div>
         
-        <!-- Nút đóng trên mobile, hoặc co giãn trên desktop -->
         <button id="btn-toggle-left" onclick="handleSidebarToggleClick()" class="w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center transition shrink-0" title="Đóng / Thu gọn">
           <i class="fa-solid fa-xmark text-sm md:hidden"></i>
           <i class="fa-solid fa-angles-left text-xs hidden md:inline"></i>
@@ -464,19 +450,19 @@
     </div>
 
     <div class="p-2 border-t border-zinc-200 dark:border-zinc-800">
-      <button onclick="syncDataToSheet(true); if(window.innerWidth < 768) closeMobileSidebar();" class="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition text-xs font-medium">
+      <button onclick="confirmSyncDataToSheet(); if(window.innerWidth < 768) closeMobileSidebar();" class="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-zinc-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition text-xs font-medium">
         <i class="fa-solid fa-cloud-arrow-up text-xs shrink-0"></i>
         <span class="sidebar-label whitespace-nowrap">Đồng bộ Cloud</span>
       </button>
     </div>
   </aside>
 
-  <!-- THANH KÉO DÃN RESIZER TRÁI (CHỈ HIỂN THỊ TRÊN DESKTOP) -->
+  <!-- THANH KÉO DÃN RESIZER TRÁI (DESKTOP) -->
   <div id="left-resizer" class="resizer-bar hidden md:flex w-1.5 hover:w-2 hover:bg-indigo-500/50 active:bg-indigo-500 cursor-col-resize z-30 transition-colors shrink-0 items-center justify-center group" title="Kéo chuột để điều chỉnh độ rộng">
     <div class="w-0.5 h-6 rounded-full bg-zinc-300 dark:bg-zinc-700 group-hover:bg-white transition-colors"></div>
   </div>
 
-  <!-- 2. KHU VỰC TRUNG TÂM (TOÀN BỘ MÀN HÌNH TRÊN DI ĐỘNG) -->
+  <!-- 2. KHU VỰC TRUNG TÂM -->
   <main id="main-content" class="flex-1 flex flex-col h-full w-full min-w-0 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
     <header class="h-14 px-3 md:px-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 z-10 gap-2">
       
@@ -510,7 +496,7 @@
       </div>
     </header>
 
-    <!-- DÒNG NHỎ CHẠY LỊCH TRÌNH VÒNG TRÒN VÔ TẬN -->
+    <!-- THANH CHẠY TIN LỊCH TRÌNH VÒNG TRÒN -->
     <div id="task-ticker-bar" class="h-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center overflow-hidden shrink-0 z-10 text-[11px]">
       <div class="h-full px-3 flex items-center space-x-1 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 font-semibold z-10 shadow-sm">
         <i class="fa-solid fa-bell text-[10px] animate-pulse"></i>
@@ -521,13 +507,12 @@
       </div>
     </div>
 
-    <!-- KHU VỰC NỘI DUNG TỪNG TAB (TỐI ƯU CHO DI ĐỘNG) -->
+    <!-- KHU VỰC NỘI DUNG TỪNG TAB -->
     <div class="flex-1 overflow-y-auto p-3.5 md:p-6 space-y-4 md:space-y-6">
       
       <!-- TAB 1: OVERVIEW -->
       <section id="tab-overview" class="space-y-4 md:space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4">
-          <!-- KHỐI 1: VIỆC CẦN LÀM -->
           <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 md:p-4 shadow-sm flex flex-col justify-between hover-card">
             <div class="flex items-center justify-between pb-2.5 border-b border-zinc-100 dark:border-zinc-800/80">
               <span class="font-semibold text-xs text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
@@ -540,7 +525,6 @@
             <button onclick="handleTabNavigation('tasks')" class="text-center text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 font-medium pt-2 border-t border-zinc-100 dark:border-zinc-800/60">Xem tất cả việc &rarr;</button>
           </div>
 
-          <!-- KHỐI 2: LINK HAY DÙNG -->
           <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 md:p-4 shadow-sm flex flex-col justify-between hover-card">
             <div class="flex items-center justify-between pb-2.5 border-b border-zinc-100 dark:border-zinc-800/80">
               <span class="font-semibold text-xs text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
@@ -553,7 +537,6 @@
             <button onclick="handleTabNavigation('bookmarks')" class="text-center text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 font-medium pt-2 border-t border-zinc-100 dark:border-zinc-800/60">Xem toàn bộ kho link &rarr;</button>
           </div>
 
-          <!-- KHỐI 3: TÀI LIỆU GOOGLE DRIVE -->
           <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3.5 md:p-4 shadow-sm flex flex-col justify-between hover-card">
             <div class="flex items-center justify-between pb-2.5 border-b border-zinc-100 dark:border-zinc-800/80">
               <span class="font-semibold text-xs text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
@@ -597,8 +580,13 @@
       <!-- TAB 4: DOCS -->
       <section id="tab-docs" class="hidden space-y-3.5">
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400">Tự động lưu vào <strong>"Orbit Hub Drive"</strong></p>
+          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400">Kho lưu trữ <strong>"Orbit Hub Drive"</strong></p>
           <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+            <!-- NÚT QUÉT ĐỒNG BỘ TRỰC TIẾP TỪ GOOGLE DRIVE -->
+            <button onclick="scanAndSyncFromDrive()" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="Quét toàn bộ file bạn đã kéo thả trực tiếp trên Google Drive về web">
+              <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+              <span>Quét tệp từ Drive</span>
+            </button>
             <button onclick="openCreateDriveFolderModal()" class="px-2.5 py-1.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm">
               <i class="fa-solid fa-folder-plus text-[10px]"></i>
               <span>Tạo thư mục</span>
@@ -638,8 +626,7 @@
           </div>
 
           <div class="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/60 text-[11px] text-zinc-600 dark:text-zinc-300 leading-relaxed">
-            <p><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i><strong>Quy tắc làm sạch & đồng bộ:</strong></p>
-            <p class="mt-1">Khi bạn dán link script và bấm <strong>"Lưu & Tải sạch dữ liệu từ Sheet"</strong>, web sẽ <strong>tự động xóa hết dữ liệu cũ/mẫu trên máy này</strong> và nạp lại toàn bộ dữ liệu sạch trực tiếp từ Google Sheet của bạn.</p>
+            <p><i class="fa-solid fa-circle-info text-indigo-500 mr-1"></i><strong>Quy tắc an toàn:</strong> Khi bạn bấm nút tải hoặc đẩy dữ liệu, hệ thống sẽ <strong>hỏi xác nhận trước</strong> để bảo đảm không bị ghi đè hay mất dữ liệu.</p>
           </div>
 
           <div>
@@ -651,12 +638,12 @@
           </div>
 
           <div class="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <!-- NÚT LƯU VÀ XÓA CŨ TẢI SẠCH -->
-            <button onclick="saveAndFreshPullFromSheet()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5">
+            <!-- NÚT ĐƯỢC BẢO VỆ XÁC NHẬN TRƯỚC KHI THỰC HIỆN -->
+            <button onclick="confirmSaveAndFreshPullFromSheet()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5">
               <i class="fa-solid fa-rotate text-[11px]"></i>
               <span>Lưu & Tải sạch dữ liệu từ Sheet</span>
             </button>
-            <button onclick="syncDataToSheet(true)" class="px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5">
+            <button onclick="confirmSyncDataToSheet()" class="px-3 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5">
               <i class="fa-solid fa-cloud-arrow-up text-[11px]"></i>
               <span>Đẩy dữ liệu lên Sheet</span>
             </button>
@@ -744,6 +731,23 @@
       bookmarks: loadedBookmarks.map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') })),
       docs: loadedDocs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }))
     };
+
+    // DỌN SẠCH CÁC THƯ MỤC CŨ KHÔNG CÒN TỒN TẠI (NHƯ ĐOÀN HÀO KHI ĐÃ BỊ XÓA)
+    function sanitizeDriveFolders() {
+      const activeFolderNames = new Set(
+        appState.docs
+          .filter(d => (d.name || '').startsWith('[Thư mục]') || (d.notes || '').includes('Thư mục trên Google Drive'))
+          .map(d => (d.name || '').replace('[Thư mục] ', '').trim())
+      );
+
+      appState.driveFolders = appState.driveFolders.filter(f => {
+        if (f.id === 'root') return true;
+        return activeFolderNames.has(f.name.trim());
+      });
+
+      localStorage.setItem('hub_drive_folders', JSON.stringify(appState.driveFolders));
+    }
+    sanitizeDriveFolders();
 
     // ========================================================
     // XỬ LÝ GIAO DIỆN DI ĐỘNG & NGĂN KÉO DRAWER
@@ -837,6 +841,8 @@
       isSavingProcess = true;
       updateSyncStatusUI('saving');
 
+      sanitizeDriveFolders();
+
       try {
         localStorage.setItem('hub_tasks', JSON.stringify(appState.tasks));
         localStorage.setItem('hub_bookmarks', JSON.stringify(appState.bookmarks));
@@ -884,22 +890,38 @@
     }
 
     // ========================================================
-    // LƯU LINK MÁY NÀY VÀ LÀM SẠCH NẠP DỮ LIỆU TỪ SHEET
+    // BƯỚC HỎI XÁC NHẬN KHI LƯU / TẢI VÀ ĐỒNG BỘ SHEET
     // ========================================================
-    async function saveAndFreshPullFromSheet() {
+    function confirmSaveAndFreshPullFromSheet() {
       const input = document.getElementById('setting-sheet-url');
       const url = (input ? input.value : appState.sheetUrl).trim();
 
       if (!url) {
-        alertModal('Chưa nhập link', 'Vui lòng dán đường link Google Apps Script vào ô trước khi bấm nút.');
+        alertModal('Chưa nhập link Script', 'Vui lòng dán đường link Google Apps Script vào ô trước khi bấm tải.');
         return;
       }
 
+      openModal(
+        'Xác nhận tải sạch từ Sheet',
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-amber-600 dark:text-amber-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Lưu ý quan trọng:</p>
+            <p class="text-zinc-700 dark:text-zinc-300 leading-relaxed">Thao tác này sẽ <strong>xóa dữ liệu tạm hiện tại trên máy này</strong> và <strong>nạp lại dữ liệu sạch từ Google Sheet</strong>. Bạn có chắc chắn muốn thực hiện?</p>
+          </div>
+        `,
+        () => {
+          closeModal();
+          executeSaveAndFreshPullFromSheet(url);
+        },
+        'Xác nhận nạp dữ liệu'
+      );
+    }
+
+    async function executeSaveAndFreshPullFromSheet(url) {
       appState.sheetUrl = url;
       localStorage.setItem('hub_sheet_url', url);
       updateSyncStatusUI('saving');
 
-      // 1. XÓA SẠCH DỮ LIỆU CŨ TRÊN TRÌNH DUYỆT ĐỂ KHÔNG BỊ ĐÈ
       localStorage.removeItem('hub_tasks');
       localStorage.removeItem('hub_bookmarks');
       localStorage.removeItem('hub_docs');
@@ -918,7 +940,6 @@
 
       renderAll();
 
-      // 2. KÉO DỮ LIỆU CHUẨN TỪ GOOGLE SHEET VỀ
       try {
         const fetchUrl = url + (url.includes('?') ? '&' : '?') + 'action=pull&t=' + Date.now();
         const res = await fetch(fetchUrl);
@@ -931,7 +952,8 @@
           if (data.subcategories && typeof data.subcategories === 'object') appState.subcategories = data.subcategories;
           if (Array.isArray(data.driveFolders) && data.driveFolders.length > 0) appState.driveFolders = data.driveFolders;
 
-          // Lưu bản sạch mới vào LocalStorage
+          sanitizeDriveFolders();
+
           localStorage.setItem('hub_tasks', JSON.stringify(appState.tasks));
           localStorage.setItem('hub_bookmarks', JSON.stringify(appState.bookmarks));
           localStorage.setItem('hub_docs', JSON.stringify(appState.docs));
@@ -940,30 +962,47 @@
 
           renderAll();
           updateSyncStatusUI('saved', 'Đã nạp sạch từ Sheet');
-          alertModal('Đã tải sạch dữ liệu!', 'Đã xóa toàn bộ dữ liệu mẫu cũ và cập nhật thành công dữ liệu từ Google Sheet về máy này.');
+          alertModal('Đã tải dữ liệu thành công', 'Toàn bộ dữ liệu sạch từ Google Sheet đã được nạp thành công vào thiết bị của bạn.');
         } else {
-          updateSyncStatusUI('saved', 'Sheet chưa có dữ liệu');
-          alertModal('Đã kết nối thành công', 'Google Sheet của bạn hiện chưa có dữ liệu nào. Bây giờ bạn có thể bắt đầu thêm công việc và liên kết mới!');
+          updateSyncStatusUI('saved', 'Sheet mới');
+          alertModal('Kết nối thành công', 'Google Sheet của bạn hiện chưa có dữ liệu. Bạn có thể bắt đầu tạo mục mới!');
         }
       } catch (err) {
         console.error('Pull Error:', err);
         updateSyncStatusUI('error', 'Lỗi kéo Sheet');
-        alertModal('Lỗi tải dữ liệu', 'Không thể kết nối đến Google Sheet. Vui lòng kiểm tra lại quyền triển khai (Ai cũng có quyền truy cập / Anyone).');
+        alertModal('Lỗi nạp dữ liệu', 'Không thể kết nối đến Google Sheet. Vui lòng kiểm tra lại đường dẫn Apps Script.');
       }
     }
 
-    function syncDataToSheet(isManual = false) {
+    function confirmSyncDataToSheet() {
       if (!appState.sheetUrl) {
-        if (isManual) {
-          handleTabNavigation('settings');
-          const input = document.getElementById('setting-sheet-url');
-          if (input) input.focus();
-        }
+        handleTabNavigation('settings');
+        const input = document.getElementById('setting-sheet-url');
+        if (input) input.focus();
+        alertModal('Chưa cấu hình Sheet', 'Vui lòng dán link Google Apps Script vào ô để kích hoạt đồng bộ đám mây.');
         return;
       }
 
+      openModal(
+        'Xác nhận đẩy lên Sheet',
+        `
+          <p class="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">Bạn có chắc chắn muốn đẩy toàn bộ công việc, liên kết và tài liệu hiện tại lên lưu trữ Google Sheet không?</p>
+        `,
+        () => {
+          closeModal();
+          syncDataToSheet(true);
+        },
+        'Đẩy lên Sheet'
+      );
+    }
+
+    function syncDataToSheet(isManual = false) {
+      if (!appState.sheetUrl) return;
+
       isSavingProcess = true;
       updateSyncStatusUI('saving');
+
+      sanitizeDriveFolders();
 
       fetch(appState.sheetUrl, {
         method: 'POST',
@@ -981,11 +1020,78 @@
       }).then(() => {
         isSavingProcess = false;
         updateSyncStatusUI('saved', 'Đã sync Cloud');
+        if (isManual) showToastNotification('Đã đồng bộ lên Sheet thành công!');
       }).catch(err => {
         console.error('Cloud Sync Error:', err);
         isSavingProcess = false;
         updateSyncStatusUI('error', 'Lỗi sync Sheet');
       });
+    }
+
+    // ========================================================
+    // QUÉT TỰ ĐỘNG TỆP TỪ GOOGLE DRIVE VỀ WEB
+    // (Bấm nút là quét mọi file bạn kéo vào Drive về thẳng web)
+    // ========================================================
+    async function scanAndSyncFromDrive() {
+      if (!appState.sheetUrl) {
+        alertModal('Chưa kết nối Drive', 'Vui lòng dán link Google Apps Script trong mục Cài đặt trước khi quét tệp.');
+        return;
+      }
+
+      updateSyncStatusUI('saving');
+      showToastNotification('Đang quét tệp từ Google Drive...');
+
+      try {
+        const response = await fetch(appState.sheetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'scan_drive_files' })
+        });
+
+        const resJson = await response.json();
+        if (resJson && resJson.status === 'success' && Array.isArray(resJson.files)) {
+          let addedCount = 0;
+          const existingLinks = new Set(appState.docs.map(d => d.link));
+
+          resJson.files.forEach(f => {
+            if (!existingLinks.has(f.url)) {
+              appState.docs.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                name: f.name,
+                link: f.url,
+                subcats: ['Chung'], // Tuyệt đối chỉ lưu vào Chung!
+                notes: `Đồng bộ từ Google Drive (${f.folderName || 'Gốc'})`
+              });
+              existingLinks.add(f.url);
+              addedCount++;
+            }
+          });
+
+          // Cập nhật lại danh sách thư mục con nếu có thư mục mới được tạo trên Drive
+          if (Array.isArray(resJson.folders)) {
+            resJson.folders.forEach(fol => {
+              if (!appState.driveFolders.some(existing => existing.id === fol.id)) {
+                appState.driveFolders.push({ id: fol.id, name: fol.name, url: fol.url });
+              }
+            });
+          }
+
+          triggerAutoSave();
+          updateSyncStatusUI('saved', 'Đã quét xong');
+          alertModal(
+            'Quét tệp Google Drive xong!',
+            addedCount > 0 
+              ? `Đã tìm thấy và tự động thêm ${addedCount} tệp mới từ Google Drive vào web của bạn!` 
+              : 'Google Drive và Web đã đồng bộ hoàn toàn, không có tệp mới nào thêm.'
+          );
+        } else {
+          throw new Error('Không lấy được dữ liệu');
+        }
+      } catch (err) {
+        console.error('Scan Drive Error:', err);
+        updateSyncStatusUI('error', 'Lỗi quét Drive');
+        alertModal('Lỗi quét Drive', 'Vui lòng kiểm tra lại quyền Apps Script hoặc triển khai phiên bản mới nhất.');
+      }
     }
 
     function clearSheetUrlOnThisDevice() {
@@ -1563,7 +1669,7 @@
     }
 
     // ========================================================
-    // RENDER DANH SÁCH TỐI ƯU GIAO DIỆN KHÔNG TRÀN CHỮ
+    // RENDER DANH SÁCH
     // ========================================================
     function renderTasks() {
       const container = document.getElementById('tasks-container');
@@ -1941,7 +2047,7 @@
     }
 
     // ========================================================
-    // XỬ LÝ XÓA AN TOÀN
+    // XỬ LÝ XÓA AN TOÀN & TỰ ĐỘNG XÓA THƯ MỤC DRIVE KHỎI MENU
     // ========================================================
     let deleteTarget = null;
 
@@ -1991,7 +2097,12 @@
           () => {
             if (type === 'tasks') appState.tasks = appState.tasks.filter(t => String(t.id) !== String(id));
             if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => String(b.id) !== String(id));
-            if (type === 'docs') appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
+            if (type === 'docs') {
+              appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
+              // NẾU XÓA MỘT THƯ MỤC DRIVE -> XÓA LUÔN KHỎI DANH SÁCH DRIVE FOLDERS
+              const cleanFolderName = itemName.replace('[Thư mục] ', '').trim();
+              appState.driveFolders = appState.driveFolders.filter(f => f.name.trim() !== cleanFolderName);
+            }
             triggerAutoSave();
             closeModal();
             showToastNotification(`Đã xóa "${itemName}"`);
@@ -2271,7 +2382,7 @@
       );
     }
 
-    // TẠO THƯ MỤC DRIVE
+    // TẠO THƯ MỤC DRIVE - TUYỆT ĐỐI KHÔNG TỰ ĐỘNG TẠO MỤC NHỎ
     function openCreateDriveFolderModal() {
       if (!appState.sheetUrl) {
         alertModal('Chưa kết nối Drive', 'Vui lòng dán link Google Apps Script vào mục "Cài đặt & Sync" để hệ thống tạo thư mục trên Drive của bạn.');
@@ -2306,17 +2417,15 @@
             const resJson = await response.json();
             if (resJson && resJson.status === 'success' && resJson.folderId) {
               appState.driveFolders.push({ id: resJson.folderId, name: resJson.folderName, url: resJson.folderUrl });
+              
+              // CHỈ LƯU VÀO MỤC "CHUNG", TUYỆT ĐỐI KHÔNG TỰ TẠO RA MỤC NHỎ MANG TÊN FOLDER
               appState.docs.push({
                 id: Date.now().toString(),
                 name: `[Thư mục] ${resJson.folderName}`,
                 link: resJson.folderUrl,
-                subcats: ['Chung', resJson.folderName],
+                subcats: ['Chung'],
                 notes: 'Thư mục trên Google Drive'
               });
-
-              if (!appState.subcategories.docs.includes(resJson.folderName)) {
-                appState.subcategories.docs.push(resJson.folderName);
-              }
 
               triggerAutoSave();
               closeModal();
@@ -2341,6 +2450,7 @@
     function openAddDocModal(initialMode = 'upload') {
       currentSelectedFile = null;
       currentFileBase64 = null;
+      sanitizeDriveFolders();
       const defaultSubcat = appState.activeFilter.docs !== 'Tất cả' ? appState.activeFilter.docs : 'Chung';
 
       const folderOptions = appState.driveFolders.map(f => {
@@ -2636,7 +2746,7 @@
       openModal(
         'Code Google Apps Script',
         `
-          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động tạo thư mục và tải tệp lên Google Drive. Vui lòng xem file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code> để copy bản đầy đủ nhất.</p>
+          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động tạo thư mục, tải tệp và quét trực tiếp Google Drive về web. Vui lòng copy toàn bộ trong file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code>.</p>
         `,
         () => closeModal(),
         'Đã hiểu'
