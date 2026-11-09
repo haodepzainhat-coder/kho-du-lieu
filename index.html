@@ -291,7 +291,7 @@
     </div>
   </div>
 
-  <!-- MODAL HỎI XÁC NHẬN XÓA -->
+  <!-- MODAL HỎI XÁC NHẬN XÓA (KÈM LỆNH XÓA THẲNG TRÊN DRIVE) -->
   <div id="delete-choice-modal" class="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div id="delete-choice-content" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-4 md:p-5 shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0">
       <div class="flex items-center space-x-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
@@ -317,18 +317,18 @@
             </span>
             <span class="text-[9px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-700 text-zinc-500">Giữ kho chung</span>
           </div>
-          <p class="text-[10px] text-zinc-500 mt-1 pl-5 leading-normal">Chỉ gỡ thẻ khỏi danh mục đang xem. Nội dung vẫn được lưu trong mục <strong>Chung</strong>.</p>
+          <p class="text-[10px] text-zinc-500 mt-1 pl-5 leading-normal">Chỉ gỡ thẻ khỏi danh mục đang xem. Nội dung vẫn được lưu trong mục <strong>Chung</strong> và trên Drive.</p>
         </button>
 
         <button id="btn-delete-permanently" class="w-full text-left p-3 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:border-rose-500 bg-rose-50/30 dark:bg-rose-950/20 transition group shadow-sm">
           <div class="flex items-center justify-between">
             <span class="font-bold text-xs text-rose-600 dark:text-rose-400 flex items-center gap-2">
               <i class="fa-solid fa-trash-can text-rose-500"></i>
-              <span>2. Xóa vĩnh viễn hoàn toàn</span>
+              <span>2. Xóa vĩnh viễn (Xóa cả trên Google Drive)</span>
             </span>
-            <span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/80 text-rose-600 dark:text-rose-300 font-bold">Xóa hẳn</span>
+            <span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/80 text-rose-600 dark:text-rose-300 font-bold">Xóa triệt để</span>
           </div>
-          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị và danh sách lưu trữ.</p>
+          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị. Nếu là tệp/thư mục Drive, nó sẽ <strong>tự động bị xóa luôn trong Google Drive</strong>.</p>
         </button>
       </div>
 
@@ -587,7 +587,7 @@
               <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
               <span>Quét tệp từ Drive</span>
             </button>
-            <button onclick="openCreateDriveFolderModal()" class="px-2.5 py-1.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm">
+            <button onclick="openCreateDriveFolderModal()" class="px-2.5 py-1.5 bg-purple-50 dark:purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm">
               <i class="fa-solid fa-folder-plus text-[10px]"></i>
               <span>Tạo thư mục</span>
             </button>
@@ -675,6 +675,12 @@
       }
     }
 
+    function extractDriveId(url) {
+      if (!url) return null;
+      const match = url.match(/[-\w]{25,}/);
+      return match ? match[0] : null;
+    }
+
     function normalizeItemSubcats(item, fallback) {
       if (Array.isArray(item.subcats) && item.subcats.length > 0) return item.subcats;
       if (item.subcat) return [item.subcat];
@@ -732,7 +738,6 @@
       docs: loadedDocs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }))
     };
 
-    // DỌN SẠCH CÁC THƯ MỤC CŨ KHÔNG CÒN TỒN TẠI (NHƯ ĐOÀN HÀO KHI ĐÃ BỊ XÓA)
     function sanitizeDriveFolders() {
       const activeFolderNames = new Set(
         appState.docs
@@ -889,9 +894,6 @@
       }
     }
 
-    // ========================================================
-    // BƯỚC HỎI XÁC NHẬN KHI LƯU / TẢI VÀ ĐỒNG BỘ SHEET
-    // ========================================================
     function confirmSaveAndFreshPullFromSheet() {
       const input = document.getElementById('setting-sheet-url');
       const url = (input ? input.value : appState.sheetUrl).trim();
@@ -1030,7 +1032,6 @@
 
     // ========================================================
     // QUÉT TỰ ĐỘNG TỆP TỪ GOOGLE DRIVE VỀ WEB
-    // (Bấm nút là quét mọi file bạn kéo vào Drive về thẳng web)
     // ========================================================
     async function scanAndSyncFromDrive() {
       if (!appState.sheetUrl) {
@@ -1057,9 +1058,10 @@
             if (!existingLinks.has(f.url)) {
               appState.docs.push({
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                driveId: f.id,
                 name: f.name,
                 link: f.url,
-                subcats: ['Chung'], // Tuyệt đối chỉ lưu vào Chung!
+                subcats: ['Chung'],
                 notes: `Đồng bộ từ Google Drive (${f.folderName || 'Gốc'})`
               });
               existingLinks.add(f.url);
@@ -1067,7 +1069,6 @@
             }
           });
 
-          // Cập nhật lại danh sách thư mục con nếu có thư mục mới được tạo trên Drive
           if (Array.isArray(resJson.folders)) {
             resJson.folders.forEach(fol => {
               if (!appState.driveFolders.some(existing => existing.id === fol.id)) {
@@ -2047,7 +2048,7 @@
     }
 
     // ========================================================
-    // XỬ LÝ XÓA AN TOÀN & TỰ ĐỘNG XÓA THƯ MỤC DRIVE KHỎI MENU
+    // XỬ LÝ XÓA AN TOÀN & XÓA THẲNG TRÊN GOOGLE DRIVE
     // ========================================================
     let deleteTarget = null;
 
@@ -2098,14 +2099,36 @@
             if (type === 'tasks') appState.tasks = appState.tasks.filter(t => String(t.id) !== String(id));
             if (type === 'bookmarks') appState.bookmarks = appState.bookmarks.filter(b => String(b.id) !== String(id));
             if (type === 'docs') {
+              const doc = item;
+              const docLink = doc.link || '';
+              const driveId = doc.driveId || extractDriveId(docLink);
+              const isFolder = (doc.name || '').startsWith('[Thư mục]') || (doc.notes || '').includes('Thư mục trên Google Drive');
+
+              // XÓA THẲNG TRÊN GOOGLE DRIVE THÔNG QUA APPS SCRIPT
+              if (appState.sheetUrl && (driveId || docLink.includes('drive.google.com') || isFolder)) {
+                fetch(appState.sheetUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                  body: JSON.stringify({
+                    action: 'delete_drive_item',
+                    driveId: driveId,
+                    url: docLink,
+                    name: doc.name,
+                    isFolder: isFolder
+                  })
+                }).catch(err => console.error('Lỗi xóa trên Drive:', err));
+              }
+
               appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
-              // NẾU XÓA MỘT THƯ MỤC DRIVE -> XÓA LUÔN KHỎI DANH SÁCH DRIVE FOLDERS
+
+              // XÓA LUÔN KHỎI DANH SÁCH DRIVE FOLDERS TRÊN WEB
               const cleanFolderName = itemName.replace('[Thư mục] ', '').trim();
               appState.driveFolders = appState.driveFolders.filter(f => f.name.trim() !== cleanFolderName);
             }
+
             triggerAutoSave();
             closeModal();
-            showToastNotification(`Đã xóa "${itemName}"`);
+            showToastNotification(`Đã xóa vĩnh viễn "${itemName}"`);
           },
           'Xóa vĩnh viễn'
         );
@@ -2382,7 +2405,7 @@
       );
     }
 
-    // TẠO THƯ MỤC DRIVE - TUYỆT ĐỐI KHÔNG TỰ ĐỘNG TẠO MỤC NHỎ
+    // TẠO THƯ MỤC DRIVE
     function openCreateDriveFolderModal() {
       if (!appState.sheetUrl) {
         alertModal('Chưa kết nối Drive', 'Vui lòng dán link Google Apps Script vào mục "Cài đặt & Sync" để hệ thống tạo thư mục trên Drive của bạn.');
@@ -2418,9 +2441,9 @@
             if (resJson && resJson.status === 'success' && resJson.folderId) {
               appState.driveFolders.push({ id: resJson.folderId, name: resJson.folderName, url: resJson.folderUrl });
               
-              // CHỈ LƯU VÀO MỤC "CHUNG", TUYỆT ĐỐI KHÔNG TỰ TẠO RA MỤC NHỎ MANG TÊN FOLDER
               appState.docs.push({
                 id: Date.now().toString(),
+                driveId: resJson.folderId,
                 name: `[Thư mục] ${resJson.folderName}`,
                 link: resJson.folderUrl,
                 subcats: ['Chung'],
@@ -2646,7 +2669,14 @@
 
           const resJson = await response.json();
           if (resJson && resJson.status === 'success' && resJson.url) {
-            appState.docs.push({ id: Date.now().toString(), name, link: resJson.url, subcats, notes });
+            appState.docs.push({ 
+              id: Date.now().toString(), 
+              driveId: resJson.id,
+              name, 
+              link: resJson.url, 
+              subcats, 
+              notes 
+            });
             triggerAutoSave();
             closeModal();
             showToastNotification(`Đã tải vào "${resJson.folderName || 'Drive'}"!`);
@@ -2662,7 +2692,15 @@
         let link = linkInput;
         if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
         if (name && link) {
-          appState.docs.push({ id: Date.now().toString(), name, link, subcats, notes });
+          const driveId = extractDriveId(link);
+          appState.docs.push({ 
+            id: Date.now().toString(), 
+            driveId: driveId,
+            name, 
+            link, 
+            subcats, 
+            notes 
+          });
           triggerAutoSave();
           closeModal();
         }
@@ -2704,6 +2742,7 @@
           if (name && link) {
             doc.name = name;
             doc.link = link;
+            doc.driveId = extractDriveId(link);
             doc.subcats = subcats;
             doc.notes = notes;
             triggerAutoSave();
@@ -2744,9 +2783,9 @@
 
     function showAppsScriptGuide() {
       openModal(
-        'Code Google Apps Script',
+        'Code Google Apps Script (Bản 3.0 Xóa Drive)',
         `
-          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động tạo thư mục, tải tệp và quét trực tiếp Google Drive về web. Vui lòng copy toàn bộ trong file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code>.</p>
+          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động xóa tệp & thư mục trực tiếp trên Google Drive khi xóa trên web. Vui lòng copy toàn bộ trong file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code>.</p>
         `,
         () => closeModal(),
         'Đã hiểu'
