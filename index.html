@@ -328,7 +328,7 @@
             </span>
             <span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/80 text-rose-600 dark:text-rose-300 font-bold">Xóa triệt để</span>
           </div>
-          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị. Nếu là tệp/thư mục Drive, nó sẽ <strong>tự động bị xóa luôn trong Google Drive</strong>.</p>
+          <p class="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 pl-5 leading-normal">Xóa hoàn toàn khỏi thiết bị. Nếu là tệp/thư mục Drive, nó và các tệp bên trong sẽ <strong>tự động bị xóa luôn trong Google Drive</strong>.</p>
         </button>
       </div>
 
@@ -580,10 +580,16 @@
       <!-- TAB 4: DOCS -->
       <section id="tab-docs" class="hidden space-y-3.5">
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400">Kho lưu trữ <strong>"Orbit Hub Drive"</strong></p>
+          <div class="flex items-center space-x-2">
+            <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400">Kho lưu trữ <strong>"Orbit Hub Drive"</strong></p>
+            <span id="docs-auto-sync-badge" class="hidden text-[10px] text-indigo-500 flex items-center space-x-1">
+              <i class="fa-solid fa-arrows-rotate fa-spin text-[9px]"></i>
+              <span>Đang kiểm tra Drive...</span>
+            </span>
+          </div>
           <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
             <!-- NÚT QUÉT ĐỒNG BỘ TRỰC TIẾP TỪ GOOGLE DRIVE -->
-            <button onclick="scanAndSyncFromDrive()" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="Quét toàn bộ file bạn đã kéo thả trực tiếp trên Google Drive về web">
+            <button onclick="scanAndSyncFromDrive(false)" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="Quét toàn bộ file bạn đã kéo thả trực tiếp trên Google Drive về web">
               <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
               <span>Quét tệp từ Drive</span>
             </button>
@@ -663,6 +669,8 @@
     let isSavingProcess = false;
     let autoSyncTimer = null;
     let searchQuery = '';
+    let isDriveScanning = false;
+    let lastDriveScanTime = 0;
 
     function safeGetJson(key, fallback) {
       try {
@@ -840,6 +848,13 @@
 
       switchTab('overview');
       renderAll();
+
+      // TỰ ĐỘNG QUÉT DRIVE KHI MỞ TRANG WEB
+      if (appState.sheetUrl) {
+        setTimeout(() => {
+          scanAndSyncFromDrive(true);
+        }, 1200);
+      }
     });
 
     function triggerAutoSave() {
@@ -1031,16 +1046,25 @@
     }
 
     // ========================================================
-    // QUÉT TỰ ĐỘNG TỆP TỪ GOOGLE DRIVE VỀ WEB
+    // TỰ ĐỘNG QUÉT & DỌN DẸP TỆP DRIVE THỜI GIAN THỰC (BẢN 4.0)
     // ========================================================
-    async function scanAndSyncFromDrive() {
-      if (!appState.sheetUrl) {
-        alertModal('Chưa kết nối Drive', 'Vui lòng dán link Google Apps Script trong mục Cài đặt trước khi quét tệp.');
-        return;
-      }
+    async function scanAndSyncFromDrive(isBackground = false) {
+      if (!appState.sheetUrl || isDriveScanning) return;
 
-      updateSyncStatusUI('saving');
-      showToastNotification('Đang quét tệp từ Google Drive...');
+      // Giới hạn tần suất quét tự động (tối thiểu 10 giây/lần)
+      const nowTime = Date.now();
+      if (isBackground && (nowTime - lastDriveScanTime < 10000)) return;
+
+      isDriveScanning = true;
+      lastDriveScanTime = nowTime;
+
+      const badge = document.getElementById('docs-auto-sync-badge');
+      if (badge && !isBackground) badge.classList.remove('hidden');
+
+      if (!isBackground) {
+        updateSyncStatusUI('saving');
+        showToastNotification('Đang kiểm tra kho Google Drive...');
+      }
 
       try {
         const response = await fetch(appState.sheetUrl, {
@@ -1050,48 +1074,127 @@
         });
 
         const resJson = await response.json();
-        if (resJson && resJson.status === 'success' && Array.isArray(resJson.files)) {
-          let addedCount = 0;
-          const existingLinks = new Set(appState.docs.map(d => d.link));
+        if (resJson && resJson.status === 'success') {
+          const remoteFiles = resJson.files || [];
+          const remoteFolders = resJson.folders || [];
+          const validFileIds = resJson.validFileIds || {};
+          const validFolderIds = resJson.validFolderIds || {};
 
-          resJson.files.forEach(f => {
-            if (!existingLinks.has(f.url)) {
+          let hasChanges = false;
+          let addedCount = 0;
+          let removedCount = 0;
+
+          // 1. CẬP NHẬT THƯ MỤC DRIVE CÒN TỒN TẠI
+          const validFolderSet = new Set(remoteFolders.map(f => f.id));
+          const oldFolderCount = appState.driveFolders.length;
+          appState.driveFolders = [
+            { id: 'root', name: 'Orbit Hub Drive (Thư mục gốc)', url: 'https://drive.google.com' },
+            ...remoteFolders.map(f => ({ id: f.id, name: f.name, url: f.url }))
+          ];
+          if (appState.driveFolders.length !== oldFolderCount) hasChanges = true;
+
+          // 2. DỌN DẸP CÁC TỆP / THƯ MỤC ĐÃ BỊ XÓA HOẶC KÉO RA KHỎI DRIVE
+          const prevDocCount = appState.docs.length;
+          appState.docs = appState.docs.filter(doc => {
+            const docLink = doc.link || '';
+            const driveId = doc.driveId || extractDriveId(docLink);
+            const isFolder = (doc.name || '').startsWith('[Thư mục]') || (doc.notes || '').includes('Thư mục trên Google Drive');
+
+            // Nếu không phải là tệp Google Drive (ví dụ link tài liệu web ngoài) -> Giữ nguyên
+            if (!driveId && !docLink.includes('drive.google.com')) return true;
+
+            // Nếu là thư mục: Kiểm tra xem thư mục này còn nằm trong kho Orbit Hub Drive không
+            if (isFolder) {
+              const keep = validFolderIds[driveId] === true;
+              if (!keep) removedCount++;
+              return keep;
+            }
+
+            // Nếu là tệp: Kiểm tra xem tệp có còn trong danh sách hợp lệ của Orbit Hub Drive không
+            // Đồng thời nếu tệp thuộc về một thư mục đã bị xóa -> tệp cũng bị xóa theo
+            const isStillInDrive = validFileIds[driveId] === true;
+            if (doc.parentFolderId && doc.parentFolderId !== 'root') {
+              if (!validFolderSet.has(doc.parentFolderId)) {
+                removedCount++;
+                return false;
+              }
+            }
+
+            if (!isStillInDrive) {
+              removedCount++;
+              return false;
+            }
+            return true;
+          });
+
+          if (appState.docs.length !== prevDocCount) hasChanges = true;
+
+          // 3. THÊM CÁC TỆP MỚI ĐƯỢC KÉO THẢ VÀO DRIVE
+          const existingLinks = new Set(appState.docs.map(d => d.link));
+          const existingIds = new Set(appState.docs.map(d => d.driveId || extractDriveId(d.link)));
+
+          // Thêm lại các thẻ thư mục nếu chưa có
+          remoteFolders.forEach(fol => {
+            const folLink = fol.url;
+            if (!existingLinks.has(folLink) && !existingIds.has(fol.id)) {
               appState.docs.push({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-                driveId: f.id,
-                name: f.name,
-                link: f.url,
+                id: 'fol_' + fol.id,
+                driveId: fol.id,
+                name: `[Thư mục] ${fol.name}`,
+                link: fol.url,
                 subcats: ['Chung'],
-                notes: `Đồng bộ từ Google Drive (${f.folderName || 'Gốc'})`
+                notes: 'Thư mục trên Google Drive'
               });
-              existingLinks.add(f.url);
-              addedCount++;
+              hasChanges = true;
             }
           });
 
-          if (Array.isArray(resJson.folders)) {
-            resJson.folders.forEach(fol => {
-              if (!appState.driveFolders.some(existing => existing.id === fol.id)) {
-                appState.driveFolders.push({ id: fol.id, name: fol.name, url: fol.url });
-              }
-            });
+          // Thêm các tệp mới kéo vào
+          remoteFiles.forEach(f => {
+            if (!existingLinks.has(f.url) && !existingIds.has(f.id)) {
+              appState.docs.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                driveId: f.id,
+                parentFolderId: f.folderId || 'root',
+                name: f.name,
+                link: f.url,
+                subcats: ['Chung'],
+                notes: `Tệp từ Drive (${f.folderName || 'Gốc'})`
+              });
+              existingLinks.add(f.url);
+              existingIds.add(f.id);
+              addedCount++;
+              hasChanges = true;
+            }
+          });
+
+          if (hasChanges) {
+            triggerAutoSave();
+            if (!isBackground) {
+              let msg = '';
+              if (addedCount > 0 && removedCount > 0) msg = `Đã đồng bộ: Thêm ${addedCount} tệp mới và dọn dẹp ${removedCount} tệp không còn trên Drive.`;
+              else if (addedCount > 0) msg = `Đã thêm ${addedCount} tệp mới từ Google Drive!`;
+              else if (removedCount > 0) msg = `Đã dọn dẹp ${removedCount} tệp đã xóa hoặc kéo ra khỏi Drive.`;
+              else msg = 'Đã cập nhật danh sách Drive mới nhất!';
+              alertModal('Đồng bộ Google Drive', msg);
+            }
+          } else {
+            if (!isBackground) {
+              alertModal('Google Drive đã đồng bộ', 'Không có tệp hoặc thư mục nào thay đổi.');
+            }
           }
 
-          triggerAutoSave();
-          updateSyncStatusUI('saved', 'Đã quét xong');
-          alertModal(
-            'Quét tệp Google Drive xong!',
-            addedCount > 0 
-              ? `Đã tìm thấy và tự động thêm ${addedCount} tệp mới từ Google Drive vào web của bạn!` 
-              : 'Google Drive và Web đã đồng bộ hoàn toàn, không có tệp mới nào thêm.'
-          );
-        } else {
-          throw new Error('Không lấy được dữ liệu');
+          updateSyncStatusUI('saved', 'Drive đã khớp');
         }
       } catch (err) {
         console.error('Scan Drive Error:', err);
-        updateSyncStatusUI('error', 'Lỗi quét Drive');
-        alertModal('Lỗi quét Drive', 'Vui lòng kiểm tra lại quyền Apps Script hoặc triển khai phiên bản mới nhất.');
+        if (!isBackground) {
+          updateSyncStatusUI('error', 'Lỗi quét Drive');
+          alertModal('Lỗi quét Drive', 'Vui lòng kiểm tra lại Apps Script hoặc quyền truy cập Google Drive.');
+        }
+      } finally {
+        isDriveScanning = false;
+        if (badge) badge.classList.add('hidden');
       }
     }
 
@@ -2119,11 +2222,21 @@
                 }).catch(err => console.error('Lỗi xóa trên Drive:', err));
               }
 
+              // XÓA MỤC NÀY KHỎI WEB
               appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
 
-              // XÓA LUÔN KHỎI DANH SÁCH DRIVE FOLDERS TRÊN WEB
-              const cleanFolderName = itemName.replace('[Thư mục] ', '').trim();
-              appState.driveFolders = appState.driveFolders.filter(f => f.name.trim() !== cleanFolderName);
+              // NẾU XÓA MỘT THƯ MỤC: XÓA TIẾP TẤT CẢ TỆP TRỰC THUỘC THƯ MỤC ĐÓ
+              if (isFolder) {
+                const cleanFolderName = itemName.replace('[Thư mục] ', '').trim();
+                appState.driveFolders = appState.driveFolders.filter(f => f.name.trim() !== cleanFolderName && f.id !== driveId);
+
+                // Xóa các tệp có parentFolderId là thư mục này hoặc ghi chú thuộc thư mục này
+                appState.docs = appState.docs.filter(d => {
+                  if (driveId && d.parentFolderId === driveId) return false;
+                  if ((d.notes || '').includes(`(${cleanFolderName})`)) return false;
+                  return true;
+                });
+              }
             }
 
             triggerAutoSave();
@@ -2175,6 +2288,11 @@
       if (activeSec) activeSec.classList.remove('hidden');
       if (activeBtn) activeBtn.classList.add('nav-btn-active');
       if (headerTitle) headerTitle.innerText = titleMap[tabName] || 'Workspace';
+
+      // TỰ ĐỘNG QUÉT DRIVE KHI CHUYỂN VÀO MỤC TÀI LIỆU
+      if (tabName === 'docs' && appState.sheetUrl) {
+        scanAndSyncFromDrive(true);
+      }
     }
 
     function openModal(title, bodyHtml, confirmCallback, confirmText = 'Lưu dữ liệu') {
@@ -2442,7 +2560,7 @@
               appState.driveFolders.push({ id: resJson.folderId, name: resJson.folderName, url: resJson.folderUrl });
               
               appState.docs.push({
-                id: Date.now().toString(),
+                id: 'fol_' + resJson.folderId,
                 driveId: resJson.folderId,
                 name: `[Thư mục] ${resJson.folderName}`,
                 link: resJson.folderUrl,
@@ -2672,6 +2790,7 @@
             appState.docs.push({ 
               id: Date.now().toString(), 
               driveId: resJson.id,
+              parentFolderId: resJson.folderId || targetFolderId,
               name, 
               link: resJson.url, 
               subcats, 
@@ -2696,6 +2815,7 @@
           appState.docs.push({ 
             id: Date.now().toString(), 
             driveId: driveId,
+            parentFolderId: 'root',
             name, 
             link, 
             subcats, 
@@ -2783,9 +2903,9 @@
 
     function showAppsScriptGuide() {
       openModal(
-        'Code Google Apps Script (Bản 3.0 Xóa Drive)',
+        'Code Google Apps Script (Bản 4.0 Tự động đồng bộ Drive)',
         `
-          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động xóa tệp & thư mục trực tiếp trên Google Drive khi xóa trên web. Vui lòng copy toàn bộ trong file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code>.</p>
+          <p class="text-[11px] text-zinc-500 mb-2">Đoạn mã tự động quét, xóa tệp bên trong thư mục và phát hiện tệp kéo ra khỏi Drive. Vui lòng xem toàn bộ mã nguồn trong file <code>HUONG_DAN_TRIEN_KHAI_VA_DONG_BO.md</code>.</p>
         `,
         () => closeModal(),
         'Đã hiểu'
