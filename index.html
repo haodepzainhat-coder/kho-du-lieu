@@ -117,6 +117,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
+    /* Phóng to tỷ lệ chữ và giao diện trên máy tính */
+    html {
+      font-size: 15.5px;
+    }
+    @media (min-width: 768px) {
+      html {
+        font-size: 16.8px;
+      }
+    }
+    @media (min-width: 1280px) {
+      html {
+        font-size: 17.5px;
+      }
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       -webkit-tap-highlight-color: transparent;
@@ -124,9 +139,24 @@
     pre code {
       font-family: 'JetBrains Mono', monospace;
     }
+
+    /* Tự động nâng cấp các cỡ chữ nhỏ thành tỷ lệ rem co giãn rõ ràng */
+    .text-\[9px\] {
+      font-size: 0.72rem !important;
+      line-height: 1rem !important;
+    }
+    .text-\[10px\] {
+      font-size: 0.78rem !important;
+      line-height: 1.1rem !important;
+    }
+    .text-\[11px\] {
+      font-size: 0.84rem !important;
+      line-height: 1.2rem !important;
+    }
+
     ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
@@ -383,7 +413,7 @@
   <!-- 1. CỘT TRÁI / MENU ĐIỀU HƯỚNG: 
        - Desktop: Cột trái co giãn bình thường.
        - Mobile: Ẩn hoàn toàn (-translate-x-full), bấm nút 3 gạch mới trượt ra, chọn xong tự ẩn đi! -->
-  <aside id="left-sidebar" class="sidebar-smooth fixed inset-y-0 left-0 z-50 md:static bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 overflow-hidden shadow-2xl md:shadow-none -translate-x-full md:translate-x-0" style="width: 230px; min-width: 80px;">
+  <aside id="left-sidebar" class="sidebar-smooth fixed inset-y-0 left-0 z-50 md:static bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between shrink-0 overflow-hidden shadow-2xl md:shadow-none -translate-x-full md:translate-x-0" style="width: 255px; min-width: 80px;">
     <div>
       <div class="h-14 px-3 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
         <div id="left-brand-text" class="flex items-center space-x-2.5 shrink-0 overflow-hidden">
@@ -481,10 +511,10 @@
     </header>
 
     <!-- DÒNG NHỎ CHẠY LỊCH TRÌNH VÒNG TRÒN VÔ TẬN -->
-    <div id="task-ticker-bar" class="h-7 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center overflow-hidden shrink-0 z-10 text-[11px]">
-      <div class="h-full px-2.5 flex items-center space-x-1 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 font-semibold z-10 shadow-sm">
-        <i class="fa-solid fa-bell text-[9px] animate-pulse"></i>
-        <span class="tracking-tight text-[10px] md:text-[11px]">Lịch trình:</span>
+    <div id="task-ticker-bar" class="h-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900/60 flex items-center overflow-hidden shrink-0 z-10 text-[11px]">
+      <div class="h-full px-3 flex items-center space-x-1 shrink-0 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-indigo-600 dark:text-indigo-400 font-semibold z-10 shadow-sm">
+        <i class="fa-solid fa-bell text-[10px] animate-pulse"></i>
+        <span class="tracking-tight text-[11px]">Lịch trình:</span>
       </div>
       <div class="ticker-wrapper flex-1 overflow-hidden relative cursor-pointer flex items-center" title="Rê chuột để dừng • Bấm để xem" onclick="handleTabNavigation('tasks')">
         <div id="ticker-track" class="flex items-center w-full"></div>
@@ -705,7 +735,7 @@
       sheetUrl: localStorage.getItem('hub_sheet_url') || '',
       driveFolderUrl: localStorage.getItem('hub_drive_folder_url') || 'https://drive.google.com',
       driveFolders: Array.isArray(loadedDriveFolders) ? loadedDriveFolders : [{ id: 'root', name: 'Orbit Hub Drive (Thư mục gốc)', url: 'https://drive.google.com' }],
-      leftWidth: parseInt(localStorage.getItem('hub_left_width')) || 230,
+      leftWidth: parseInt(localStorage.getItem('hub_left_width')) || 255,
       leftCollapsed: false,
       currentTab: 'overview',
       subcategories: loadedSubcategories,
@@ -1019,7 +1049,7 @@
         labels.forEach(el => el.classList.add('hidden'));
         if (toggleBtn) toggleBtn.innerHTML = '<i class="fa-solid fa-angles-right text-xs"></i>';
       } else {
-        const targetW = appState.leftWidth >= 170 ? appState.leftWidth : 230;
+        const targetW = appState.leftWidth >= 170 ? appState.leftWidth : 255;
         sidebar.style.width = `${targetW}px`;
         appState.leftWidth = targetW;
         labels.forEach(el => el.classList.remove('hidden'));
@@ -1806,7 +1836,7 @@
     // ========================================================
     let currentDetailItem = null;
     let currentDetailType = null;
-    let detailFontSize = parseInt(localStorage.getItem('hub_detail_font_size')) || 15;
+    let detailFontSize = parseInt(localStorage.getItem('hub_detail_font_size')) || 16;
 
     function openItemDetail(type, id) {
       currentDetailType = type;
