@@ -701,6 +701,57 @@
     </div>
   </main>
 
+  <!-- NÚT NỔI VÀ KHUNG SỔ TAY NHÁP NHANH (FLOATING SCRATCHPAD) -->
+  <div id="scratchpad-widget" class="fixed bottom-6 right-5 z-40 flex flex-col items-end pointer-events-none">
+    
+    <!-- Khung Cửa sổ Nháp nổi -->
+    <div id="scratchpad-panel" class="hidden pointer-events-auto mb-3 w-[92vw] sm:w-[380px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all transform scale-95 opacity-0">
+      
+      <!-- Header sổ nháp -->
+      <div class="px-3.5 py-2.5 bg-zinc-50 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-2">
+          <div class="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-note-sticky"></i>
+          </div>
+          <span class="font-bold text-xs text-zinc-800 dark:text-zinc-200">Sổ nháp nhanh</span>
+          <span id="scratchpad-counter" class="text-[10px] text-zinc-400 font-mono">0 từ</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <button onclick="copyScratchpad()" class="w-7 h-7 rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 flex items-center justify-center transition" title="Sao chép nội dung">
+            <i class="fa-regular fa-copy text-xs"></i>
+          </button>
+          <button onclick="clearScratchpad()" class="w-7 h-7 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 flex items-center justify-center transition" title="Xóa toàn bộ">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+          <button onclick="toggleScratchpad()" class="w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Vùng nhập ghi chú tự động lưu -->
+      <div class="p-3 flex-1 flex flex-col">
+        <textarea id="scratchpad-textarea" oninput="handleScratchpadInput(this.value)" placeholder="Viết nháp ý tưởng, đoạn code, dán tạm văn bản tại đây... (Tự động lưu tức thì)" class="w-full h-44 sm:h-52 bg-zinc-50/70 dark:bg-zinc-800/50 text-xs text-zinc-800 dark:text-zinc-200 p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-700/80 focus:outline-none focus:border-amber-500 resize-none leading-relaxed select-text font-normal"></textarea>
+      </div>
+
+      <!-- Footer sổ nháp -->
+      <div class="px-3 py-2 bg-zinc-50/60 dark:bg-zinc-800/40 border-t border-zinc-200/70 dark:border-zinc-800/70 flex items-center justify-between text-[11px] shrink-0">
+        <span class="text-zinc-400 text-[10px]"><i class="fa-solid fa-keyboard mr-1"></i>Phím tắt: Alt + N</span>
+        <button onclick="convertScratchpadToTask()" class="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] shadow-sm transition flex items-center space-x-1">
+          <i class="fa-solid fa-calendar-plus text-[10px]"></i>
+          <span>Tạo thành việc</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Nút Nổi mở Sổ Nháp -->
+    <button onclick="toggleScratchpad()" id="scratchpad-fab" class="pointer-events-auto h-11 px-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xl shadow-amber-500/25 flex items-center space-x-2 transition-all transform active:scale-95 group" title="Mở Sổ nháp nhanh (Alt + N)">
+      <i class="fa-solid fa-pen-nib text-sm group-hover:rotate-12 transition-transform"></i>
+      <span class="text-xs font-semibold">Sổ nháp</span>
+      <span id="scratchpad-has-content-dot" class="hidden w-2 h-2 rounded-full bg-white animate-pulse"></span>
+    </button>
+  </div>
+
   <!-- JAVASCRIPT HỆ THỐNG -->
   <script>
     let isSavingProcess = false;
@@ -752,9 +803,9 @@
     });
 
     let loadedTasks = safeGetJson('hub_tasks', [
-      { id: '1', title: 'Hoàn thành báo cáo bài tập lớn', date: '2026-11-10', priority: 'high', done: false, subcats: ['Đồ án lớn', 'Chung'], notes: 'Tham khảo tài liệu tại https://github.com' },
-      { id: '2', title: 'Ôn tập kiến thức xác suất thống kê', date: '2026-11-14', priority: 'medium', done: false, subcats: ['Ôn thi', 'Chung'], notes: 'Slide chương 4' },
-      { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, completedAt: new Date(Date.now() - 2 * 86400000).toISOString(), subcats: ['Bài tập tuần', 'Chung'], notes: '' }
+      { id: '1', title: 'Hoàn thành báo cáo bài tập lớn', date: '2026-11-10', priority: 'high', done: false, repeat: 'none', subcats: ['Đồ án lớn', 'Chung'], notes: 'Tham khảo tài liệu tại https://github.com' },
+      { id: '2', title: 'Ôn tập kiến thức xác suất thống kê', date: '2026-11-14', priority: 'medium', done: false, repeat: 'weekly', subcats: ['Ôn thi', 'Chung'], notes: 'Slide chương 4' },
+      { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, completedAt: new Date(Date.now() - 2 * 86400000).toISOString(), repeat: 'none', subcats: ['Bài tập tuần', 'Chung'], notes: '' }
     ]);
 
     let loadedBookmarks = safeGetJson('hub_bookmarks', [
@@ -828,6 +879,103 @@
       if (appState.tasks.length !== initialCount) {
         triggerAutoSave();
       }
+    }
+
+    // ========================================================
+    // TỰ ĐỘNG PHÁT HIỆN HẾT HẠN & TẠO KỲ MỚI CHO CÔNG VIỆC LẶP LẠI
+    // ========================================================
+    function getTodayDateString() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function checkAndRolloverExpiredRecurringTasks() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = getTodayDateString();
+
+      let hasCreatedNew = false;
+      let newTasks = [];
+
+      appState.tasks.forEach(t => {
+        if (!t.done && t.repeat && t.repeat !== 'none' && t.date) {
+          const parts = t.date.split('-');
+          if (parts.length === 3) {
+            const taskDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            taskDate.setHours(0, 0, 0, 0);
+
+            // Khi công việc có lặp lại đã quá hạn/hết hạn (hạn chót < hôm nay)
+            if (taskDate < today) {
+              t.done = true;
+              t.completedAt = new Date().toISOString();
+
+              // Tự động tính hạn chót mới tiếp nối sát chu kỳ
+              let nextDate = t.date;
+              let safety = 0;
+              while (nextDate <= todayStr && safety < 60) {
+                nextDate = calculateNextRepeatDate(nextDate, t.repeat);
+                safety++;
+              }
+
+              const newTask = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                title: t.title,
+                date: nextDate,
+                repeat: t.repeat,
+                priority: t.priority || 'medium',
+                subcats: Array.isArray(t.subcats) ? [...t.subcats] : ['Chung'],
+                notes: t.notes || '',
+                done: false
+              };
+              newTasks.push(newTask);
+              hasCreatedNew = true;
+            }
+          }
+        }
+      });
+
+      if (hasCreatedNew) {
+        appState.tasks = [...newTasks, ...appState.tasks];
+        triggerAutoSave();
+        newTasks.forEach(nt => {
+          showToastNotification(`Đã hết hạn! Tự tạo kỳ mới: "${nt.title}" (Hạn chót: ${nt.date})`);
+        });
+      }
+    }
+
+    function manualRolloverTask(id, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const task = appState.tasks.find(t => String(t.id) === String(id));
+      if (!task || !task.repeat || task.repeat === 'none') return;
+
+      task.done = true;
+      task.completedAt = new Date().toISOString();
+
+      let nextDate = calculateNextRepeatDate(task.date, task.repeat);
+      const todayStr = getTodayDateString();
+      let safety = 0;
+      while (nextDate < todayStr && safety < 60) {
+        nextDate = calculateNextRepeatDate(nextDate, task.repeat);
+        safety++;
+      }
+
+      const newTask = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+        title: task.title,
+        date: nextDate,
+        repeat: task.repeat,
+        priority: task.priority || 'medium',
+        subcats: Array.isArray(task.subcats) ? [...task.subcats] : ['Chung'],
+        notes: task.notes || '',
+        done: false
+      };
+
+      appState.tasks.unshift(newTask);
+      triggerAutoSave();
+      showToastNotification(`Đã tạo kỳ tiếp theo: "${newTask.title}" (Hạn chót: ${nextDate})`);
     }
 
     // ========================================================
@@ -929,6 +1077,7 @@
           closeModal();
           closeDeleteChoiceModal();
           exitDocBatchMode();
+          closeScratchpad();
           if (window.innerWidth < 768) closeMobileSidebar();
         } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
           e.preventDefault();
@@ -937,10 +1086,15 @@
             sInput.focus();
             sInput.select();
           }
+        } else if (e.altKey && e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          toggleScratchpad();
         }
       });
 
       cleanupExpiredCompletedTasks();
+      checkAndRolloverExpiredRecurringTasks();
+      initScratchpad();
       switchTab('overview');
       renderAll();
 
@@ -1941,9 +2095,19 @@
         return;
       }
 
+      // SẮP XẾP: VIỆC TÔ ĐỎ (GẤP/QUÁ HẠN) TỰ ĐẨY LÊN ĐẦU, VIỆC ĐÃ XONG TỰ ĐẨY XUỐNG DƯỚI CÙNG
       filtered = [...filtered].sort((a, b) => {
-        if (a.done === b.done) return 0;
-        return a.done ? 1 : -1;
+        if (a.done !== b.done) {
+          return a.done ? 1 : -1;
+        }
+        if (!a.done && !b.done) {
+          const aUrgent = getTaskDeadlineInfo(a.date).isUrgent;
+          const bUrgent = getTaskDeadlineInfo(b.date).isUrgent;
+          if (aUrgent !== bUrgent) {
+            return aUrgent ? -1 : 1; // Việc tô đỏ lên đầu
+          }
+        }
+        return 0;
       });
 
       const now = Date.now();
@@ -1951,6 +2115,11 @@
       container.innerHTML = filtered.map((t) => {
         const dInfo = getTaskDeadlineInfo(t.date);
         const isUrgent = !t.done && dInfo.isUrgent;
+
+        const repeatLabels = { daily: 'Hằng ngày', weekly: 'Hằng tuần', monthly: 'Hằng tháng' };
+        const repeatBadge = (t.repeat && t.repeat !== 'none')
+          ? `<span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-200 dark:border-purple-800" title="Tự động tạo kỳ tiếp theo khi hết hạn"><i class="fa-solid fa-arrows-rotate mr-0.5 text-[8px]"></i>${repeatLabels[t.repeat] || t.repeat}</span>`
+          : '';
 
         let autoDeleteNote = '';
         if (t.done && t.completedAt) {
@@ -1985,13 +2154,14 @@
               <i class="fa-solid fa-grip-vertical text-xs"></i>
             </div>
 
-            <button onclick="toggleTaskDone('${t.id}')" class="w-4 h-4 rounded-full border ${t.done ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-zinc-400 dark:border-zinc-500'} flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer" title="${t.done ? 'Đánh dấu chưa xong' : 'Hoàn thành (Đẩy xuống dưới & tự xóa sau 30 ngày)'}">
+            <button onclick="toggleTaskDone('${t.id}')" class="w-4 h-4 rounded-full border ${t.done ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-zinc-400 dark:border-zinc-500'} flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer" title="${t.done ? 'Đánh dấu chưa xong' : 'Hoàn thành (Đẩy xuống dưới & tự tạo kỳ lặp tiếp)'}">
               ${t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
             </button>
             <div class="flex-1 min-w-0 cursor-pointer overflow-hidden" onclick="openItemDetail('task', '${t.id}')">
               <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                 <p class="text-xs font-semibold truncate hover:text-indigo-600 ${isUrgent ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-zinc-800 dark:text-zinc-200'} ${t.done ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}">${escapeHtml(t.title)}</p>
                 ${isUrgent ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-600 text-white shrink-0">${dInfo.label}</span>` : ''}
+                ${repeatBadge}
                 ${autoDeleteNote}
               </div>
               <div class="flex items-center space-x-1.5 text-[10px] text-zinc-400 mt-1 flex-wrap gap-y-1">
@@ -2008,6 +2178,12 @@
           </div>
 
           <div class="flex items-center space-x-1 shrink-0">
+            ${(t.repeat && t.repeat !== 'none' && !t.done) ? `
+              <button onclick="manualRolloverTask('${t.id}', event)" class="px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-medium transition flex items-center space-x-1 mr-1 shadow-sm" title="Bấm để chốt kỳ này và tạo ngay kỳ tiếp theo">
+                <i class="fa-solid fa-arrows-rotate text-[9px]"></i>
+                <span class="hidden sm:inline">Kỳ mới</span>
+              </button>
+            ` : ''}
             <button onclick="moveItemOrder('tasks', '${t.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Di chuyển lên trên">
               <i class="fa-solid fa-arrow-up text-[10px]"></i>
             </button>
@@ -2430,9 +2606,15 @@
       const oDocs = document.getElementById('overview-docs-list');
 
       if (oTasks) {
+        // TÔ ĐỎ ĐẨY LÊN ĐẦU, HOÀN THÀNH XUỐNG DƯỚI
         const sortedOverviewTasks = [...appState.tasks].sort((a, b) => {
-          if (a.done === b.done) return 0;
-          return a.done ? 1 : -1;
+          if (a.done !== b.done) return a.done ? 1 : -1;
+          if (!a.done && !b.done) {
+            const aUrgent = getTaskDeadlineInfo(a.date).isUrgent;
+            const bUrgent = getTaskDeadlineInfo(b.date).isUrgent;
+            if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
+          }
+          return 0;
         });
 
         oTasks.innerHTML = sortedOverviewTasks.slice(0, 3).map(t => {
@@ -2519,11 +2701,17 @@
         titleEl.innerText = item.title;
 
         const dInfo = getTaskDeadlineInfo(item.date);
+        const repeatLabels = { daily: 'Hằng ngày', weekly: 'Hằng tuần', monthly: 'Hằng tháng' };
+        const repeatTag = (item.repeat && item.repeat !== 'none')
+          ? `<span class="text-[11px] px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 font-medium"><i class="fa-solid fa-arrows-rotate mr-1"></i>Lặp: ${repeatLabels[item.repeat] || item.repeat}</span>`
+          : '';
+
         metaBar.innerHTML = `
           <span class="text-[11px] px-2 py-0.5 rounded-lg font-medium ${item.done ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800'}">
             ${item.done ? 'Đã xong' : `Hạn: ${item.date}`}
           </span>
           <span class="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium">Mục: ${escapeHtml(subcatLabels)}</span>
+          ${repeatTag}
         `;
         bodyText.innerHTML = item.notes ? formatNoteWithLinks(item.notes, true) : '<span class="text-zinc-400 italic">Không có ghi chú.</span>';
         linkBox.classList.add('hidden');
@@ -2730,6 +2918,10 @@
       if (activeBtn) activeBtn.classList.add('nav-btn-active');
       if (headerTitle) headerTitle.innerText = titleMap[tabName] || 'Workspace';
 
+      if (tabName === 'tasks' || tabName === 'overview') {
+        checkAndRolloverExpiredRecurringTasks();
+      }
+
       if (tabName === 'docs' && appState.sheetUrl) {
         scanAndSyncFromDrive(true);
       }
@@ -2785,9 +2977,20 @@
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Tên việc / Môn học</label>
             <input type="text" id="modal-task-title" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="VD: Nộp bài tập lớn...">
           </div>
-          <div>
-            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Hạn chót</label>
-            <input type="date" id="modal-task-date" value="${today}" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Hạn chót</label>
+              <input type="date" id="modal-task-date" value="${today}" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Tự động lặp lại</label>
+              <select id="modal-task-repeat" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">
+                <option value="none">Không lặp lại</option>
+                <option value="daily">Hằng ngày (+1 ngày)</option>
+                <option value="weekly">Hằng tuần (+7 ngày)</option>
+                <option value="monthly">Hằng tháng (+1 tháng)</option>
+              </select>
+            </div>
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mức độ ưu tiên</label>
@@ -2805,12 +3008,13 @@
         () => {
           const title = document.getElementById('modal-task-title').value.trim();
           const date = document.getElementById('modal-task-date').value || today;
+          const repeat = document.getElementById('modal-task-repeat')?.value || 'none';
           const priority = document.getElementById('modal-task-priority').value;
           let subcats = ['Chung'];
           try { subcats = JSON.parse(document.getElementById('modal-task-subcats').value); } catch(e) {}
           const notes = document.getElementById('modal-task-notes').value.trim();
           if (title) {
-            appState.tasks.push({ id: Date.now().toString(), title, date, priority, subcats, notes, done: false });
+            appState.tasks.push({ id: Date.now().toString(), title, date, repeat, priority, subcats, notes, done: false });
             triggerAutoSave();
             closeModal();
           }
@@ -2822,6 +3026,8 @@
       const task = appState.tasks.find(t => String(t.id) === String(id));
       if (!task) return;
 
+      const currentRepeat = task.repeat || 'none';
+
       openModal(
         'Sửa công việc',
         `
@@ -2829,9 +3035,20 @@
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Tên công việc</label>
             <input type="text" id="modal-edit-task-title" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${escapeHtml(task.title).replace(/"/g, '&quot;')}">
           </div>
-          <div>
-            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Hạn chót</label>
-            <input type="date" id="modal-edit-task-date" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${task.date || ''}">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Hạn chót</label>
+              <input type="date" id="modal-edit-task-date" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${task.date || ''}">
+            </div>
+            <div>
+              <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Tự động lặp lại</label>
+              <select id="modal-edit-task-repeat" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">
+                <option value="none" ${currentRepeat === 'none' ? 'selected' : ''}>Không lặp lại</option>
+                <option value="daily" ${currentRepeat === 'daily' ? 'selected' : ''}>Hằng ngày (+1 ngày)</option>
+                <option value="weekly" ${currentRepeat === 'weekly' ? 'selected' : ''}>Hằng tuần (+7 ngày)</option>
+                <option value="monthly" ${currentRepeat === 'monthly' ? 'selected' : ''}>Hằng tháng (+1 tháng)</option>
+              </select>
+            </div>
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Ưu tiên</label>
@@ -2849,6 +3066,7 @@
         () => {
           const title = document.getElementById('modal-edit-task-title').value.trim();
           const date = document.getElementById('modal-edit-task-date').value || task.date;
+          const repeat = document.getElementById('modal-edit-task-repeat')?.value || 'none';
           const priority = document.getElementById('modal-edit-task-priority').value;
           let subcats = ['Chung'];
           try { subcats = JSON.parse(document.getElementById('modal-edit-task-subcats').value); } catch(e) {}
@@ -2857,6 +3075,7 @@
           if (title) {
             task.title = title;
             task.date = date;
+            task.repeat = repeat;
             task.priority = priority;
             task.subcats = subcats;
             task.notes = notes;
@@ -3313,12 +3532,61 @@
       );
     }
 
+    function calculateNextRepeatDate(baseDateStr, repeatType) {
+      let d = new Date();
+      if (baseDateStr) {
+        const parts = baseDateStr.split('-');
+        if (parts.length === 3) {
+          d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        }
+      }
+
+      if (repeatType === 'daily') {
+        d.setDate(d.getDate() + 1);
+      } else if (repeatType === 'weekly') {
+        d.setDate(d.getDate() + 7);
+      } else if (repeatType === 'monthly') {
+        d.setMonth(d.getMonth() + 1);
+      }
+
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     function toggleTaskDone(id) {
       const task = appState.tasks.find(t => String(t.id) === String(id));
       if (task) {
         task.done = !task.done;
         if (task.done) {
           task.completedAt = new Date().toISOString();
+
+          // NẾU CÓ CHU KỲ LẶP: TỰ ĐỘNG SINH CÔNG VIỆC MỚI CHO CHU KỲ TIẾP THEO
+          if (task.repeat && task.repeat !== 'none') {
+            let nextDate = calculateNextRepeatDate(task.date, task.repeat);
+            const todayStr = getTodayDateString();
+            let safety = 0;
+            while (nextDate < todayStr && safety < 60) {
+              nextDate = calculateNextRepeatDate(nextDate, task.repeat);
+              safety++;
+            }
+            const newTask = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+              title: task.title,
+              date: nextDate,
+              repeat: task.repeat,
+              priority: task.priority || 'medium',
+              subcats: [...(task.subcats || ['Chung'])],
+              notes: task.notes || '',
+              done: false
+            };
+            appState.tasks.unshift(newTask);
+            showToastNotification(`Đã xong! Đã tạo việc kỳ tiếp theo (${nextDate})`);
+          } else {
+            showToastNotification('Đã xong! Công việc chuyển xuống dưới & tự xóa sau 30 ngày.');
+          }
+
           const idx = appState.tasks.findIndex(t => String(t.id) === String(id));
           if (idx !== -1) {
             const [completedItem] = appState.tasks.splice(idx, 1);
@@ -3329,9 +3597,6 @@
         }
 
         triggerAutoSave();
-        if (task.done) {
-          showToastNotification('Đã xong! Công việc chuyển xuống dưới & tự xóa sau 30 ngày.');
-        }
       }
     }
 
@@ -3365,6 +3630,120 @@
         () => closeModal(),
         'Đã hiểu'
       );
+    }
+
+    // ========================================================
+    // QUẢN LÝ SỔ TAY NHÁP NHANH (FLOATING SCRATCHPAD)
+    // ========================================================
+    let scratchpadTimer = null;
+
+    function initScratchpad() {
+      const savedText = localStorage.getItem('hub_scratchpad') || '';
+      const textarea = document.getElementById('scratchpad-textarea');
+      if (textarea) textarea.value = savedText;
+      updateScratchpadCounter(savedText);
+    }
+
+    function toggleScratchpad() {
+      const panel = document.getElementById('scratchpad-panel');
+      if (!panel) return;
+
+      const isHidden = panel.classList.contains('hidden');
+      if (isHidden) {
+        panel.classList.remove('hidden');
+        setTimeout(() => {
+          panel.classList.remove('scale-95', 'opacity-0');
+          panel.classList.add('scale-100', 'opacity-100');
+          const textarea = document.getElementById('scratchpad-textarea');
+          if (textarea) textarea.focus();
+        }, 10);
+      } else {
+        closeScratchpad();
+      }
+    }
+
+    function closeScratchpad() {
+      const panel = document.getElementById('scratchpad-panel');
+      if (!panel || panel.classList.contains('hidden')) return;
+
+      panel.classList.remove('scale-100', 'opacity-100');
+      panel.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => panel.classList.add('hidden'), 200);
+    }
+
+    function handleScratchpadInput(val) {
+      updateScratchpadCounter(val);
+      if (scratchpadTimer) clearTimeout(scratchpadTimer);
+      scratchpadTimer = setTimeout(() => {
+        localStorage.setItem('hub_scratchpad', val);
+      }, 300);
+    }
+
+    function updateScratchpadCounter(text) {
+      const counterEl = document.getElementById('scratchpad-counter');
+      const dotEl = document.getElementById('scratchpad-has-content-dot');
+      const clean = (text || '').trim();
+      const words = clean ? clean.split(/\s+/).length : 0;
+      const chars = clean.length;
+
+      if (counterEl) counterEl.innerText = `${words} từ • ${chars} ký tự`;
+      if (dotEl) {
+        if (chars > 0) dotEl.classList.remove('hidden');
+        else dotEl.classList.add('hidden');
+      }
+    }
+
+    function copyScratchpad() {
+      const textarea = document.getElementById('scratchpad-textarea');
+      if (!textarea || !textarea.value.trim()) {
+        showToastNotification('Sổ nháp đang trống!');
+        return;
+      }
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        showToastNotification('Đã sao chép toàn bộ nội dung nháp!');
+      });
+    }
+
+    function clearScratchpad() {
+      const textarea = document.getElementById('scratchpad-textarea');
+      if (!textarea || !textarea.value.trim()) return;
+
+      openModal(
+        'Xóa toàn bộ nháp',
+        '<p class="text-xs text-rose-600 font-semibold">Bạn có chắc chắn muốn xóa sạch toàn bộ nội dung trong sổ nháp?</p>',
+        () => {
+          textarea.value = '';
+          localStorage.removeItem('hub_scratchpad');
+          updateScratchpadCounter('');
+          closeModal();
+          showToastNotification('Đã làm trống sổ nháp!');
+        },
+        'Xóa nháp'
+      );
+    }
+
+    function convertScratchpadToTask() {
+      const textarea = document.getElementById('scratchpad-textarea');
+      const content = (textarea ? textarea.value : '').trim();
+      if (!content) {
+        showToastNotification('Chưa có nội dung nháp để tạo việc!');
+        return;
+      }
+
+      // Tách dòng đầu làm tiêu đề, các dòng sau làm ghi chú
+      const lines = content.split('\n');
+      const title = lines[0].slice(0, 80).trim();
+      const notes = lines.length > 1 ? lines.slice(1).join('\n').trim() : '';
+
+      closeScratchpad();
+      openAddTaskModal();
+
+      setTimeout(() => {
+        const titleInput = document.getElementById('modal-task-title');
+        const notesInput = document.getElementById('modal-task-notes');
+        if (titleInput) titleInput.value = title;
+        if (notesInput) notesInput.value = notes || content;
+      }, 50);
     }
 
     function escapeHtml(str) {
