@@ -248,20 +248,24 @@
     }
 
     .draggable-item {
-      cursor: grab;
       user-select: none;
-    }
-    .draggable-item:active {
-      cursor: grabbing;
     }
     .dragging {
       opacity: 0.45 !important;
       transform: scale(0.98) !important;
     }
     .drag-over-pill {
-      transform: scale(1.1) !important;
+      transform: scale(1.08) !important;
       border-color: #6366f1 !important;
-      background-color: rgba(99, 102, 241, 0.3) !important;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4) !important;
+    }
+    .subcat-drop-target {
+      border-left: 3px solid #6366f1 !important;
+    }
+
+    .batch-selecting-item {
+      cursor: pointer !important;
+      user-select: none !important;
     }
   </style>
 </head>
@@ -554,7 +558,7 @@
       <!-- TAB 2: TASKS -->
       <section id="tab-tasks" class="hidden space-y-3.5">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 truncate">Kéo thả đổi vị trí hoặc thả vào mục nhỏ</p>
+          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 truncate">Kéo thả để sắp xếp thứ tự • Việc xong tự động đẩy xuống dưới</p>
           <button onclick="openAddTaskModal()" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1 shrink-0">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>Thêm việc</span>
@@ -567,7 +571,7 @@
       <!-- TAB 3: BOOKMARKS -->
       <section id="tab-bookmarks" class="hidden space-y-3.5">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 truncate">Tự động nhận diện biểu tượng Tab website</p>
+          <p class="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 truncate">Kéo thả để sắp xếp • Tự động nhận diện biểu tượng Tab web</p>
           <button onclick="openAddBookmarkModal()" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm transition flex items-center space-x-1 shrink-0">
             <i class="fa-solid fa-plus text-[10px]"></i>
             <span>Lưu link mới</span>
@@ -588,7 +592,11 @@
             </span>
           </div>
           <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
-            <!-- NÚT QUÉT ĐỒNG BỘ TRỰC TIẾP TỪ GOOGLE DRIVE -->
+            <!-- NÚT BẬT TẮT CHỌN HÀNG LOẠT -->
+            <button id="btn-toggle-doc-batch" onclick="toggleDocBatchMode()" class="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="Chọn nhiều tài liệu để di chuyển hoặc xóa">
+              <i class="fa-solid fa-list-check text-[10px]"></i>
+              <span id="batch-mode-btn-text">Chọn nhiều</span>
+            </button>
             <button onclick="scanAndSyncFromDrive(false)" class="px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="Quét toàn bộ file bạn đã kéo thả trực tiếp trên Google Drive về web">
               <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
               <span>Quét tệp từ Drive</span>
@@ -603,6 +611,36 @@
             </button>
           </div>
         </div>
+
+        <!-- THANH CÔNG CỤ CHỌN NHIỀU HÀNG LOẠT TÀI LIỆU -->
+        <div id="docs-batch-toolbar" class="hidden p-2.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between flex-wrap gap-2 text-xs transition-all shadow-sm">
+          <div class="flex items-center space-x-2">
+            <span class="font-semibold text-indigo-700 dark:text-indigo-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-circle-check text-indigo-500"></i>
+              <span>Đã chọn <strong id="docs-selected-count" class="text-indigo-600 dark:text-indigo-400 font-bold">0</strong> tài liệu</span>
+            </span>
+            <button onclick="toggleSelectAllDocs()" id="btn-select-all-docs" class="text-[11px] text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-300 underline font-medium">Chọn tất cả</button>
+          </div>
+
+          <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+            <button onclick="openBatchMoveSubcatModal()" class="px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold transition flex items-center space-x-1 shadow-sm">
+              <i class="fa-solid fa-tags text-[10px]"></i>
+              <span>Đổi mục nhỏ</span>
+            </button>
+            <button onclick="openBatchMoveFolderModal()" class="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-semibold transition flex items-center space-x-1 shadow-sm">
+              <i class="fa-solid fa-folder-tree text-[10px]"></i>
+              <span>Đổi thư mục Drive</span>
+            </button>
+            <button onclick="openBatchDeleteModal()" class="px-2 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[11px] font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-trash-can text-[10px]"></i>
+              <span>Xóa đã chọn</span>
+            </button>
+            <button onclick="exitDocBatchMode()" class="px-2 py-1 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 text-[11px] font-medium transition">
+              Đóng
+            </button>
+          </div>
+        </div>
+
         <div class="flex items-center space-x-2 overflow-x-auto pb-1.5 pt-0.5 border-b border-zinc-200/60 dark:border-zinc-800/80" id="docs-subcat-bar"></div>
         <div id="docs-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
       </section>
@@ -672,6 +710,10 @@
     let isDriveScanning = false;
     let lastDriveScanTime = 0;
 
+    // Quản lý trạng thái chọn hàng loạt tài liệu
+    let isDocBatchMode = false;
+    let selectedDocIds = new Set();
+
     function safeGetJson(key, fallback) {
       try {
         const raw = localStorage.getItem(key);
@@ -713,7 +755,7 @@
     let loadedTasks = safeGetJson('hub_tasks', [
       { id: '1', title: 'Hoàn thành báo cáo bài tập lớn', date: '2026-11-10', priority: 'high', done: false, subcats: ['Đồ án lớn', 'Chung'], notes: 'Tham khảo tài liệu tại https://github.com' },
       { id: '2', title: 'Ôn tập kiến thức xác suất thống kê', date: '2026-11-14', priority: 'medium', done: false, subcats: ['Ôn thi', 'Chung'], notes: 'Slide chương 4' },
-      { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, subcats: ['Bài tập tuần', 'Chung'], notes: '' }
+      { id: '3', title: 'Nộp slide thuyết trình nhóm', date: '2026-11-18', priority: 'low', done: true, completedAt: new Date(Date.now() - 2 * 86400000).toISOString(), subcats: ['Bài tập tuần', 'Chung'], notes: '' }
     ]);
 
     let loadedBookmarks = safeGetJson('hub_bookmarks', [
@@ -761,6 +803,33 @@
       localStorage.setItem('hub_drive_folders', JSON.stringify(appState.driveFolders));
     }
     sanitizeDriveFolders();
+
+    // ========================================================
+    // TỰ ĐỘNG XÓA LỊCH TRÌNH HOÀN THÀNH SAU 30 NGÀY
+    // ========================================================
+    function cleanupExpiredCompletedTasks() {
+      const now = Date.now();
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      const initialCount = appState.tasks.length;
+
+      appState.tasks = appState.tasks.filter(t => {
+        if (t.done) {
+          if (!t.completedAt) {
+            t.completedAt = new Date().toISOString();
+            return true;
+          }
+          const completedTime = new Date(t.completedAt).getTime();
+          if (!isNaN(completedTime) && (now - completedTime >= THIRTY_DAYS_MS)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (appState.tasks.length !== initialCount) {
+        triggerAutoSave();
+      }
+    }
 
     // ========================================================
     // XỬ LÝ GIAO DIỆN DI ĐỘNG & NGĂN KÉO DRAWER
@@ -846,10 +915,10 @@
         }
       });
 
+      cleanupExpiredCompletedTasks();
       switchTab('overview');
       renderAll();
 
-      // TỰ ĐỘNG QUÉT DRIVE KHI MỞ TRANG WEB
       if (appState.sheetUrl) {
         setTimeout(() => {
           scanAndSyncFromDrive(true);
@@ -970,6 +1039,7 @@
           if (Array.isArray(data.driveFolders) && data.driveFolders.length > 0) appState.driveFolders = data.driveFolders;
 
           sanitizeDriveFolders();
+          cleanupExpiredCompletedTasks();
 
           localStorage.setItem('hub_tasks', JSON.stringify(appState.tasks));
           localStorage.setItem('hub_bookmarks', JSON.stringify(appState.bookmarks));
@@ -1051,7 +1121,6 @@
     async function scanAndSyncFromDrive(isBackground = false) {
       if (!appState.sheetUrl || isDriveScanning) return;
 
-      // Giới hạn tần suất quét tự động (tối thiểu 10 giây/lần)
       const nowTime = Date.now();
       if (isBackground && (nowTime - lastDriveScanTime < 10000)) return;
 
@@ -1084,7 +1153,6 @@
           let addedCount = 0;
           let removedCount = 0;
 
-          // 1. CẬP NHẬT THƯ MỤC DRIVE CÒN TỒN TẠI
           const validFolderSet = new Set(remoteFolders.map(f => f.id));
           const oldFolderCount = appState.driveFolders.length;
           appState.driveFolders = [
@@ -1093,25 +1161,20 @@
           ];
           if (appState.driveFolders.length !== oldFolderCount) hasChanges = true;
 
-          // 2. DỌN DẸP CÁC TỆP / THƯ MỤC ĐÃ BỊ XÓA HOẶC KÉO RA KHỎI DRIVE
           const prevDocCount = appState.docs.length;
           appState.docs = appState.docs.filter(doc => {
             const docLink = doc.link || '';
             const driveId = doc.driveId || extractDriveId(docLink);
             const isFolder = (doc.name || '').startsWith('[Thư mục]') || (doc.notes || '').includes('Thư mục trên Google Drive');
 
-            // Nếu không phải là tệp Google Drive (ví dụ link tài liệu web ngoài) -> Giữ nguyên
             if (!driveId && !docLink.includes('drive.google.com')) return true;
 
-            // Nếu là thư mục: Kiểm tra xem thư mục này còn nằm trong kho Orbit Hub Drive không
             if (isFolder) {
               const keep = validFolderIds[driveId] === true;
               if (!keep) removedCount++;
               return keep;
             }
 
-            // Nếu là tệp: Kiểm tra xem tệp có còn trong danh sách hợp lệ của Orbit Hub Drive không
-            // Đồng thời nếu tệp thuộc về một thư mục đã bị xóa -> tệp cũng bị xóa theo
             const isStillInDrive = validFileIds[driveId] === true;
             if (doc.parentFolderId && doc.parentFolderId !== 'root') {
               if (!validFolderSet.has(doc.parentFolderId)) {
@@ -1129,11 +1192,9 @@
 
           if (appState.docs.length !== prevDocCount) hasChanges = true;
 
-          // 3. THÊM CÁC TỆP MỚI ĐƯỢC KÉO THẢ VÀO DRIVE
           const existingLinks = new Set(appState.docs.map(d => d.link));
           const existingIds = new Set(appState.docs.map(d => d.driveId || extractDriveId(d.link)));
 
-          // Thêm lại các thẻ thư mục nếu chưa có
           remoteFolders.forEach(fol => {
             const folLink = fol.url;
             if (!existingLinks.has(folLink) && !existingIds.has(fol.id)) {
@@ -1149,7 +1210,6 @@
             }
           });
 
-          // Thêm các tệp mới kéo vào
           remoteFiles.forEach(f => {
             if (!existingLinks.has(f.url) && !existingIds.has(f.id)) {
               appState.docs.push({
@@ -1286,11 +1346,37 @@
     }
 
     // ========================================================
-    // KÉO THẢ SẮP XẾP & ĐA MỤC
+    // KÉO THẢ SẮP XẾP THỨ TỰ (CẢ THẺ VÀ MỤC NHỎ PHÂN LOẠI)
     // ========================================================
     let draggedItemInfo = null;
+    let draggedSubcatInfo = null;
 
+    // 1. KÉO THẢ SẮP XẾP CÁC MỤC NHỎ PHÂN LOẠI (SUBCATEGORIES)
+    function handleSubcatDragStart(e, type, subcat) {
+      if (subcat === 'Tất cả') {
+        e.preventDefault();
+        return;
+      }
+      draggedSubcatInfo = { type, subcat };
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', `subcat:${type}:${subcat}`); } catch (err) {}
+      setTimeout(() => { if (e.target) e.target.classList.add('dragging'); }, 0);
+    }
+
+    function handleSubcatDragEnd(e) {
+      if (e.target) e.target.classList.remove('dragging');
+      document.querySelectorAll('.subcat-pill-item').forEach(el => {
+        el.classList.remove('subcat-drop-target', 'drag-over-pill');
+      });
+      draggedSubcatInfo = null;
+    }
+
+    // 2. KÉO THẢ SẮP XẾP CÁC THẺ (ITEMS)
     function handleDragStart(e, type, id) {
+      if (type === 'docs' && (isDocBatchMode || selectedDocIds.size > 0)) {
+        e.preventDefault();
+        return;
+      }
       draggedItemInfo = { type, id: String(id) };
       e.dataTransfer.effectAllowed = 'copyMove';
       try { e.dataTransfer.setData('text/plain', String(id)); } catch (err) {}
@@ -1299,16 +1385,19 @@
 
     function handleDragEnd(e) {
       if (e.target) e.target.classList.remove('dragging');
-      document.querySelectorAll('.subcat-pill-item').forEach(el => el.classList.remove('drag-over-pill'));
+      document.querySelectorAll('.subcat-pill-item').forEach(el => el.classList.remove('drag-over-pill', 'subcat-drop-target'));
       draggedItemInfo = null;
     }
 
     function handleDragOverContainer(e) {
+      if (isDocBatchMode || selectedDocIds.size > 0) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
     }
 
     function handleDropOnItem(e, targetType, targetId) {
+      if (targetType === 'docs' && (isDocBatchMode || selectedDocIds.size > 0)) return;
+
       e.preventDefault();
       e.stopPropagation();
       if (!draggedItemInfo || draggedItemInfo.type !== targetType) return;
@@ -1323,24 +1412,46 @@
         const [movedItem] = list.splice(fromIdx, 1);
         list.splice(toIdx, 0, movedItem);
         triggerAutoSave();
+        showToastNotification('Đã thay đổi thứ tự!');
       }
+    }
+
+    // DI CHUYỂN THẺ LÊN / XUỐNG DỄ DÀNG (HỖ TRỢ ĐIỆN THOẠI)
+    function moveItemOrder(type, id, direction, e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      let list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
+      const idx = list.findIndex(i => String(i.id) === String(id));
+      if (idx === -1) return;
+
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= list.length) return;
+
+      const [item] = list.splice(idx, 1);
+      list.splice(targetIdx, 0, item);
+      triggerAutoSave();
     }
 
     function handleSubcatDragEnter(e) {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-      const targetSubcat = e.currentTarget.getAttribute('data-subcat');
-      if (targetSubcat && targetSubcat !== 'Tất cả') e.currentTarget.classList.add('drag-over-pill');
+      if (draggedSubcatInfo) {
+        e.currentTarget.classList.add('subcat-drop-target');
+      } else if (draggedItemInfo) {
+        const targetSubcat = e.currentTarget.getAttribute('data-subcat');
+        if (targetSubcat && targetSubcat !== 'Tất cả') e.currentTarget.classList.add('drag-over-pill');
+      }
     }
 
     function handleSubcatDragOver(e) {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
+      e.dataTransfer.dropEffect = draggedSubcatInfo ? 'move' : 'copy';
     }
 
     function handleSubcatDragLeave(e) {
       if (!e.currentTarget.contains(e.relatedTarget)) {
-        e.currentTarget.classList.remove('drag-over-pill');
+        e.currentTarget.classList.remove('drag-over-pill', 'subcat-drop-target');
       }
     }
 
@@ -1348,10 +1459,30 @@
       e.preventDefault();
       e.stopPropagation();
       const pill = e.currentTarget;
-      pill.classList.remove('drag-over-pill');
+      pill.classList.remove('drag-over-pill', 'subcat-drop-target');
 
       const targetSubcat = pill.getAttribute('data-subcat');
       const type = pill.getAttribute('data-type');
+
+      // TRƯỜNG HỢP 1: HOÁN ĐỔI THỨ TỰ CÁC MỤC NHỎ (SUBCAT REORDER)
+      if (draggedSubcatInfo && draggedSubcatInfo.type === type) {
+        const srcSubcat = draggedSubcatInfo.subcat;
+        if (srcSubcat !== targetSubcat && targetSubcat !== 'Tất cả') {
+          const list = appState.subcategories[type];
+          const fromIdx = list.indexOf(srcSubcat);
+          const toIdx = list.indexOf(targetSubcat);
+          if (fromIdx !== -1 && toIdx !== -1) {
+            const [moved] = list.splice(fromIdx, 1);
+            list.splice(toIdx, 0, moved);
+            triggerAutoSave();
+            showToastNotification(`Đã chuyển mục "${srcSubcat}" đến vị trí mới!`);
+          }
+        }
+        draggedSubcatInfo = null;
+        return;
+      }
+
+      // TRƯỜNG HỢP 2: THẢ THẺ VÀO MỤC NHỎ (GÁN THẺ)
       if (!draggedItemInfo || draggedItemInfo.type !== type || !targetSubcat || targetSubcat === 'Tất cả') return;
 
       const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
@@ -1418,14 +1549,20 @@
         }
 
         return `
-          <div class="subcat-pill-item inline-flex items-center space-x-1 shrink-0 px-2.5 py-1 rounded-xl text-xs font-medium cursor-pointer transition select-none ${isActive ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' : 'bg-zinc-200/70 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'}" 
+          <div class="subcat-pill-item inline-flex items-center space-x-1.5 shrink-0 px-2.5 py-1 rounded-xl text-xs font-medium cursor-pointer transition select-none group/subcat ${isActive ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' : 'bg-zinc-200/70 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'}" 
+            draggable="${!isAll}"
             data-type="${type}"
             data-subcat="${escapeHtml(sub)}"
+            title="${!isAll ? 'Kéo để đổi thứ tự mục hoặc thả thẻ vào' : ''}"
             onclick="onSubcatPillClick(this)"
+            ondragstart="handleSubcatDragStart(event, '${type}', '${escapeHtml(sub)}')"
+            ondragend="handleSubcatDragEnd(event)"
             ondragenter="handleSubcatDragEnter(event)"
             ondragover="handleSubcatDragOver(event)"
             ondragleave="handleSubcatDragLeave(event)"
             ondrop="handleDropOnSubcategory(event)">
+            
+            ${!isAll ? `<i class="fa-solid fa-grip-lines-vertical text-[9px] opacity-40 group-hover/subcat:opacity-80"></i>` : ''}
             <span class="pointer-events-none">${escapeHtml(sub)}</span>
             <span class="pointer-events-none text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-zinc-300/80 dark:bg-zinc-700 text-zinc-500'}">${count}</span>
             ${(!isAll && !isDefaultChung) ? `
@@ -1439,7 +1576,7 @@
 
       container.innerHTML = `
         ${pillsHtml}
-        <button onclick="openCreateSubcategoryModal('${type}')" class="inline-flex items-center space-x-1 shrink-0 px-2.5 py-1 rounded-xl text-xs font-medium border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-indigo-500 text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+        <button onclick="openCreateSubcategoryModal('${type}')" class="inline-flex items-center space-x-1 shrink-0 px-2.5 py-1 rounded-xl text-xs font-medium border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-indigo-500 text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Tạo thêm mục mới">
           <i class="fa-solid fa-plus text-[10px]"></i>
           <span>Tạo mục nhỏ</span>
         </button>
@@ -1615,6 +1752,7 @@
       renderOverviewPreviews();
       renderTaskTicker();
       updateBadges();
+      updateDocBatchUI();
     }
 
     function getTaskDeadlineInfo(dateStr) {
@@ -1773,7 +1911,7 @@
     }
 
     // ========================================================
-    // RENDER DANH SÁCH
+    // RENDER DANH SÁCH CÔNG VIỆC (ĐẨY XUỐNG DƯỚI & TỰ ĐỘNG XÓA SAU 30 NGÀY)
     // ========================================================
     function renderTasks() {
       const container = document.getElementById('tasks-container');
@@ -1795,9 +1933,27 @@
         return;
       }
 
-      container.innerHTML = filtered.map(t => {
+      // TỰ ĐỘNG ĐẨY CÔNG VIỆC HOÀN THÀNH XUỐNG DƯỚI CÙNG
+      filtered = [...filtered].sort((a, b) => {
+        if (a.done === b.done) return 0;
+        return a.done ? 1 : -1;
+      });
+
+      const now = Date.now();
+
+      container.innerHTML = filtered.map((t, idx) => {
         const dInfo = getTaskDeadlineInfo(t.date);
         const isUrgent = !t.done && dInfo.isUrgent;
+
+        let autoDeleteNote = '';
+        if (t.done && t.completedAt) {
+          const compTime = new Date(t.completedAt).getTime();
+          if (!isNaN(compTime)) {
+            const passedDays = Math.floor((now - compTime) / (1000 * 60 * 60 * 24));
+            const remainingDays = Math.max(0, 30 - passedDays);
+            autoDeleteNote = `<span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-zinc-200/80 dark:bg-zinc-800 text-zinc-500"><i class="fa-solid fa-hourglass-half mr-0.5 text-zinc-400"></i>Xóa sau ${remainingDays} ngày</span>`;
+          }
+        }
 
         const borderStyle = isUrgent
           ? 'border border-rose-500/80 bg-rose-50/40 dark:bg-rose-950/30'
@@ -1810,7 +1966,7 @@
         `).join(' ');
 
         return `
-        <div class="draggable-item flex items-start justify-between p-3 rounded-xl hover-card transition-all relative overflow-hidden ${borderStyle} ${t.done ? 'opacity-60' : ''}"
+        <div class="draggable-item flex items-start justify-between p-3 rounded-xl hover-card transition-all relative overflow-hidden group/card ${borderStyle} ${t.done ? 'opacity-60 bg-zinc-100/60 dark:bg-zinc-900/40' : ''}"
           draggable="true"
           ondragstart="handleDragStart(event, 'tasks', '${t.id}')"
           ondragend="handleDragEnd(event)"
@@ -1818,13 +1974,19 @@
           ondrop="handleDropOnItem(event, 'tasks', '${t.id}')">
           
           <div class="flex items-start space-x-2.5 flex-1 min-w-0 pr-2">
-            <button onclick="toggleTaskDone('${t.id}')" class="w-4 h-4 rounded-full border ${t.done ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-zinc-400 dark:border-zinc-500'} flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer">
+            <!-- Nút nắm kéo sắp xếp -->
+            <div class="cursor-grab text-zinc-300 dark:text-zinc-600 hover:text-indigo-500 mt-1 shrink-0" title="Kéo để đổi vị trí">
+              <i class="fa-solid fa-grip-vertical text-xs"></i>
+            </div>
+
+            <button onclick="toggleTaskDone('${t.id}')" class="w-4 h-4 rounded-full border ${t.done ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-zinc-400 dark:border-zinc-500'} flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer" title="${t.done ? 'Đánh dấu chưa xong' : 'Hoàn thành (Đẩy xuống dưới & tự xóa sau 30 ngày)'}">
               ${t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
             </button>
             <div class="flex-1 min-w-0 cursor-pointer overflow-hidden" onclick="openItemDetail('task', '${t.id}')">
               <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                <p class="text-xs font-semibold truncate hover:text-indigo-600 ${isUrgent ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-zinc-800 dark:text-zinc-200'} ${t.done ? 'line-through text-zinc-400' : ''}">${escapeHtml(t.title)}</p>
+                <p class="text-xs font-semibold truncate hover:text-indigo-600 ${isUrgent ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-zinc-800 dark:text-zinc-200'} ${t.done ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}">${escapeHtml(t.title)}</p>
                 ${isUrgent ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-rose-600 text-white shrink-0">${dInfo.label}</span>` : ''}
+                ${autoDeleteNote}
               </div>
               <div class="flex items-center space-x-1.5 text-[10px] text-zinc-400 mt-1 flex-wrap gap-y-1">
                 <span><i class="fa-regular fa-clock mr-0.5"></i>${t.date}</span>
@@ -1838,7 +2000,15 @@
               ` : ''}
             </div>
           </div>
+
           <div class="flex items-center space-x-1 shrink-0">
+            <!-- Nút di chuyển lên / xuống nhanh cho điện thoại & máy tính -->
+            <button onclick="moveItemOrder('tasks', '${t.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Di chuyển lên trên">
+              <i class="fa-solid fa-arrow-up text-[10px]"></i>
+            </button>
+            <button onclick="moveItemOrder('tasks', '${t.id}', 'down', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Di chuyển xuống dưới">
+              <i class="fa-solid fa-arrow-down text-[10px]"></i>
+            </button>
             <button onclick="openEditTaskModal('${t.id}')" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
             <button onclick="openDeleteChoiceModal('tasks', '${t.id}')" class="text-zinc-400 hover:text-rose-500 p-1 text-xs"><i class="fa-solid fa-trash-can"></i></button>
           </div>
@@ -1875,7 +2045,7 @@
         `).join(' ');
 
         return `
-          <div class="draggable-item p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-2.5 shadow-sm hover-card transition overflow-hidden"
+          <div class="draggable-item p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-2.5 shadow-sm hover-card transition overflow-hidden group/bm"
             draggable="true"
             ondragstart="handleDragStart(event, 'bookmarks', '${b.id}')"
             ondragend="handleDragEnd(event)"
@@ -1885,6 +2055,10 @@
             <div>
               <div class="flex items-start justify-between gap-1">
                 <div class="flex items-center space-x-2 min-w-0 pr-1 cursor-pointer flex-1 overflow-hidden" onclick="openItemDetail('bookmark', '${b.id}')">
+                  <!-- Tay nắm kéo -->
+                  <div class="cursor-grab text-zinc-300 dark:text-zinc-600 hover:text-indigo-500 shrink-0" title="Kéo để đổi vị trí">
+                    <i class="fa-solid fa-grip-vertical text-xs"></i>
+                  </div>
                   ${iconHtml}
                   <div class="min-w-0 flex-1">
                     <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate hover:text-indigo-600 block">${escapeHtml(b.title)}</p>
@@ -1894,6 +2068,8 @@
                   </div>
                 </div>
                 <div class="flex items-center space-x-1 shrink-0">
+                  <button onclick="moveItemOrder('bookmarks', '${b.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển lên trước"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
+                  <button onclick="moveItemOrder('bookmarks', '${b.id}', 'down', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển ra sau"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
                   <button onclick="openEditBookmarkModal('${b.id}')" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button onclick="openDeleteChoiceModal('bookmarks', '${b.id}')" class="text-zinc-400 hover:text-rose-500 p-1 text-xs"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
@@ -1918,6 +2094,222 @@
       }).join('');
     }
 
+    // ========================================================
+    // RENDER TÀI LIỆU & CHẾ ĐỘ CHỌN HÀNG LOẠT (KHÓA DI CHUYỂN, ICON BO GÓC)
+    // ========================================================
+    function toggleDocBatchMode() {
+      isDocBatchMode = !isDocBatchMode;
+      if (!isDocBatchMode) {
+        selectedDocIds.clear();
+      }
+      updateDocBatchUI();
+      renderDocs();
+    }
+
+    function exitDocBatchMode() {
+      isDocBatchMode = false;
+      selectedDocIds.clear();
+      updateDocBatchUI();
+      renderDocs();
+    }
+
+    function updateDocBatchUI() {
+      const toolbar = document.getElementById('docs-batch-toolbar');
+      const countEl = document.getElementById('docs-selected-count');
+      const btnText = document.getElementById('batch-mode-btn-text');
+      const btnBatch = document.getElementById('btn-toggle-doc-batch');
+
+      if (!toolbar) return;
+
+      const isVisible = isDocBatchMode || selectedDocIds.size > 0;
+      if (isVisible) {
+        toolbar.classList.remove('hidden');
+        if (countEl) countEl.innerText = selectedDocIds.size;
+        if (btnBatch) {
+          btnBatch.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+          btnBatch.classList.remove('bg-zinc-100', 'text-zinc-700', 'dark:bg-zinc-800');
+        }
+        if (btnText) btnText.innerText = 'Đang chọn';
+      } else {
+        toolbar.classList.add('hidden');
+        if (btnBatch) {
+          btnBatch.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+          btnBatch.classList.add('bg-zinc-100', 'text-zinc-700', 'dark:bg-zinc-800');
+        }
+        if (btnText) btnText.innerText = 'Chọn nhiều';
+      }
+
+      const btnSelectAll = document.getElementById('btn-select-all-docs');
+      if (btnSelectAll) {
+        const filter = appState.activeFilter.docs || 'Tất cả';
+        let currentList = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
+        if (currentList.length > 0 && selectedDocIds.size >= currentList.length) {
+          btnSelectAll.innerText = 'Bỏ chọn tất cả';
+        } else {
+          btnSelectAll.innerText = 'Chọn tất cả';
+        }
+      }
+    }
+
+    function toggleSelectDoc(id, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const strId = String(id);
+      if (selectedDocIds.has(strId)) {
+        selectedDocIds.delete(strId);
+      } else {
+        selectedDocIds.add(strId);
+      }
+      if (selectedDocIds.size > 0) isDocBatchMode = true;
+      updateDocBatchUI();
+      renderDocs();
+    }
+
+    function toggleSelectAllDocs() {
+      const filter = appState.activeFilter.docs || 'Tất cả';
+      let currentList = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
+
+      if (selectedDocIds.size >= currentList.length) {
+        selectedDocIds.clear();
+      } else {
+        currentList.forEach(d => selectedDocIds.add(String(d.id)));
+      }
+      updateDocBatchUI();
+      renderDocs();
+    }
+
+    // MODAL DI CHUYỂN MỤC NHỎ HÀNG LOẠT
+    function openBatchMoveSubcatModal() {
+      if (selectedDocIds.size === 0) {
+        alertModal('Chưa chọn tài liệu', 'Vui lòng tích chọn ít nhất 1 tài liệu để di chuyển.');
+        return;
+      }
+
+      const subcats = (appState.subcategories.docs || []).filter(s => s !== 'Tất cả');
+      const radioOptions = subcats.map((cat, idx) => `
+        <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 cursor-pointer hover:border-indigo-500 transition">
+          <input type="radio" name="batch-target-subcat" value="${escapeHtml(cat)}" ${idx === 0 ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
+          <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200">${escapeHtml(cat)}</span>
+        </label>
+      `).join('');
+
+      openModal(
+        `Di chuyển ${selectedDocIds.size} tài liệu sang Mục nhỏ`,
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-zinc-600 dark:text-zinc-400">Chọn mục nhỏ bạn muốn chuyển các tài liệu đã chọn tới:</p>
+            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              ${radioOptions}
+            </div>
+            <div class="pt-2 flex items-center space-x-2">
+              <input type="checkbox" id="batch-subcat-replace" checked class="rounded text-indigo-600">
+              <label for="batch-subcat-replace" class="text-[11px] text-zinc-500 cursor-pointer">Thay thế mục cũ (Bỏ chọn nếu muốn thêm kèm)</label>
+            </div>
+          </div>
+        `,
+        () => {
+          const selectedRadio = document.querySelector('input[name="batch-target-subcat"]:checked');
+          if (!selectedRadio) return;
+          const targetSubcat = selectedRadio.value;
+          const isReplace = document.getElementById('batch-subcat-replace')?.checked;
+
+          appState.docs.forEach(d => {
+            if (selectedDocIds.has(String(d.id))) {
+              if (isReplace) {
+                d.subcats = [targetSubcat];
+              } else {
+                if (!Array.isArray(d.subcats)) d.subcats = ['Chung'];
+                if (!d.subcats.includes(targetSubcat)) d.subcats.push(targetSubcat);
+              }
+            }
+          });
+
+          triggerAutoSave();
+          closeModal();
+          showToastNotification(`Đã chuyển ${selectedDocIds.size} tài liệu sang mục "${targetSubcat}"!`);
+          exitDocBatchMode();
+        },
+        'Xác nhận di chuyển'
+      );
+    }
+
+    // MODAL DI CHUYỂN THƯ MỤC DRIVE HÀNG LOẠT
+    function openBatchMoveFolderModal() {
+      if (selectedDocIds.size === 0) {
+        alertModal('Chưa chọn tài liệu', 'Vui lòng tích chọn ít nhất 1 tài liệu để di chuyển.');
+        return;
+      }
+
+      sanitizeDriveFolders();
+      const folderOptions = appState.driveFolders.map((f, idx) => `
+        <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 cursor-pointer hover:border-purple-500 transition">
+          <input type="radio" name="batch-target-folder" value="${escapeHtml(f.id)}" data-name="${escapeHtml(f.name)}" ${idx === 0 ? 'checked' : ''} class="text-purple-600 focus:ring-purple-500">
+          <div class="min-w-0 flex-1">
+            <span class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block truncate">${escapeHtml(f.name)}</span>
+            <span class="text-[10px] text-zinc-400 font-mono">${f.id === 'root' ? 'Thư mục gốc Drive' : 'Thư mục con'}</span>
+          </div>
+        </label>
+      `).join('');
+
+      openModal(
+        `Chuyển ${selectedDocIds.size} tài liệu sang Thư mục Drive`,
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-zinc-600 dark:text-zinc-400">Chọn thư mục Google Drive muốn chuyển các tài liệu này vào:</p>
+            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              ${folderOptions}
+            </div>
+          </div>
+        `,
+        () => {
+          const selectedRadio = document.querySelector('input[name="batch-target-folder"]:checked');
+          if (!selectedRadio) return;
+          const targetFolderId = selectedRadio.value;
+          const targetFolderName = selectedRadio.getAttribute('data-name') || 'Drive';
+
+          appState.docs.forEach(d => {
+            if (selectedDocIds.has(String(d.id))) {
+              d.parentFolderId = targetFolderId;
+              if (d.notes && d.notes.includes('Tệp từ Drive')) {
+                d.notes = `Tệp từ Drive (${targetFolderName})`;
+              }
+            }
+          });
+
+          triggerAutoSave();
+          closeModal();
+          showToastNotification(`Đã chuyển ${selectedDocIds.size} tài liệu vào "${targetFolderName}"!`);
+          exitDocBatchMode();
+        },
+        'Chuyển thư mục'
+      );
+    }
+
+    // MODAL XÓA HÀNG LOẠT TÀI LIỆU
+    function openBatchDeleteModal() {
+      if (selectedDocIds.size === 0) return;
+
+      openModal(
+        'Xóa hàng loạt tài liệu',
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-rose-600 dark:text-rose-400 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Cảnh báo:</p>
+            <p class="text-zinc-700 dark:text-zinc-300 leading-relaxed">Bạn có chắc chắn muốn xóa <strong>${selectedDocIds.size}</strong> tài liệu đã chọn khỏi danh sách không?</p>
+          </div>
+        `,
+        () => {
+          appState.docs = appState.docs.filter(d => !selectedDocIds.has(String(d.id)));
+          triggerAutoSave();
+          closeModal();
+          showToastNotification(`Đã xóa ${selectedDocIds.size} tài liệu!`);
+          exitDocBatchMode();
+        },
+        'Xóa hàng loạt'
+      );
+    }
+
     function renderDocs() {
       const container = document.getElementById('docs-container');
       if (!container) return;
@@ -1938,23 +2330,54 @@
         return;
       }
 
+      const isBatchActive = isDocBatchMode || selectedDocIds.size > 0;
+
       container.innerHTML = filtered.map(d => {
+        const isSelected = selectedDocIds.has(String(d.id));
         const iconInfo = getDocumentIconInfo(d.name, d.link);
         const subcatsHtml = (d.subcats || []).map(s => `
           <span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-500 font-medium truncate max-w-[80px]">${escapeHtml(s)}</span>
         `).join(' ');
 
+        const cardBorder = isSelected
+          ? 'border-2 border-indigo-600 dark:border-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
+          : 'border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900';
+
+        const checkIconHtml = `
+          <div onclick="toggleSelectDoc('${d.id}', event)" class="w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+            isSelected 
+              ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40' 
+              : 'border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-transparent hover:border-indigo-400'
+          }">
+            <i class="fa-solid fa-check text-[10px] transform transition-transform ${isSelected ? 'scale-100' : 'scale-50'}"></i>
+          </div>
+        `;
+
         return `
-          <div class="draggable-item p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-2.5 shadow-sm hover-card transition overflow-hidden"
-            draggable="true"
-            ondragstart="handleDragStart(event, 'docs', '${d.id}')"
+          <div class="p-3 rounded-xl ${cardBorder} flex flex-col justify-between space-y-2.5 shadow-sm hover-card transition overflow-hidden group relative ${
+            isBatchActive ? 'batch-selecting-item cursor-pointer' : 'draggable-item'
+          }"
+            draggable="${!isBatchActive}"
+            ondragstart="${isBatchActive ? 'return false;' : `handleDragStart(event, 'docs', '${d.id}')`}"
             ondragend="handleDragEnd(event)"
-            ondragover="handleDragOverContainer(event)"
-            ondrop="handleDropOnItem(event, 'docs', '${d.id}')">
+            ondragover="${isBatchActive ? '' : 'handleDragOverContainer(event)'}"
+            ondrop="${isBatchActive ? '' : `handleDropOnItem(event, 'docs', '${d.id}')`}"
+            onclick="${isBatchActive ? `toggleSelectDoc('${d.id}', event)` : ''}">
             
             <div>
-              <div class="flex items-start justify-between gap-1">
-                <div class="flex items-center space-x-2 min-w-0 pr-1 cursor-pointer flex-1 overflow-hidden" onclick="openItemDetail('doc', '${d.id}')">
+              <div class="flex items-start justify-between gap-1.5">
+                <div class="flex items-center space-x-2.5 min-w-0 pr-1 cursor-pointer flex-1 overflow-hidden" onclick="${isBatchActive ? `toggleSelectDoc('${d.id}', event)` : `openItemDetail('doc', '${d.id}')`}">
+                  
+                  <!-- Tay nắm kéo (khi không ở chế độ chọn hàng loạt) -->
+                  <div class="cursor-grab text-zinc-300 dark:text-zinc-600 hover:text-indigo-500 shrink-0 ${isBatchActive ? 'hidden' : 'block'}" title="Kéo để đổi vị trí">
+                    <i class="fa-solid fa-grip-vertical text-xs"></i>
+                  </div>
+
+                  <!-- Nút Icon chọn bo góc (luôn hiện khi ở chế độ chọn hoặc hover) -->
+                  <div class="shrink-0 flex items-center justify-center ${isBatchActive ? 'block' : 'hidden group-hover:block'}">
+                    ${checkIconHtml}
+                  </div>
+
                   <div class="w-7 h-7 rounded-lg ${iconInfo.bg} border flex items-center justify-center shrink-0">
                     <i class="${iconInfo.icon} ${iconInfo.color} text-xs"></i>
                   </div>
@@ -1965,23 +2388,27 @@
                     </div>
                   </div>
                 </div>
-                <div class="flex items-center space-x-1 shrink-0">
-                  <button onclick="openEditDocModal('${d.id}')" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
-                  <button onclick="openDeleteChoiceModal('docs', '${d.id}')" class="text-zinc-400 hover:text-rose-500 p-1 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+
+                <!-- Các nút tác vụ bị khóa khi đang chọn nhiều -->
+                <div class="flex items-center space-x-1 shrink-0 ${isBatchActive ? 'hidden' : ''}">
+                  <button onclick="moveItemOrder('docs', '${d.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển lên trước"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
+                  <button onclick="moveItemOrder('docs', '${d.id}', 'down', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển ra sau"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
+                  <button onclick="event.stopPropagation(); openEditDocModal('${d.id}')" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button onclick="event.stopPropagation(); openDeleteChoiceModal('docs', '${d.id}')" class="text-zinc-400 hover:text-rose-500 p-1 text-xs"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
               </div>
 
               ${d.notes ? `
-                <div class="mt-2 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800 break-words line-clamp-2 cursor-pointer" onclick="openItemDetail('doc', '${d.id}')">
+                <div class="mt-2 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/60 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800 break-words line-clamp-2 cursor-pointer" onclick="${isBatchActive ? `toggleSelectDoc('${d.id}', event)` : `openItemDetail('doc', '${d.id}')`}">
                   ${formatNoteWithLinks(d.notes, false)}
                 </div>
               ` : ''}
             </div>
 
             <div class="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
-              <button onclick="openItemDetail('doc', '${d.id}')" class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium">
-                <span>Chi tiết & Mở</span>
-                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+              <button onclick="${isBatchActive ? `toggleSelectDoc('${d.id}', event)` : `openItemDetail('doc', '${d.id}')`}" class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium">
+                <span>${isBatchActive ? (isSelected ? 'Bỏ chọn thẻ này' : 'Chọn thẻ này') : 'Chi tiết & Mở'}</span>
+                <i class="fa-solid ${isBatchActive ? (isSelected ? 'fa-square-minus' : 'fa-square-check') : 'fa-arrow-up-right-from-square'} text-[9px]"></i>
               </button>
               <span class="text-[9px] text-zinc-400 font-mono">${iconInfo.label}</span>
             </div>
@@ -1996,7 +2423,12 @@
       const oDocs = document.getElementById('overview-docs-list');
 
       if (oTasks) {
-        oTasks.innerHTML = appState.tasks.slice(0, 3).map(t => {
+        const sortedOverviewTasks = [...appState.tasks].sort((a, b) => {
+          if (a.done === b.done) return 0;
+          return a.done ? 1 : -1;
+        });
+
+        oTasks.innerHTML = sortedOverviewTasks.slice(0, 3).map(t => {
           const dInfo = getTaskDeadlineInfo(t.date);
           const isUrgent = !t.done && dInfo.isUrgent;
           return `
@@ -2049,6 +2481,10 @@
     let detailFontSize = parseInt(localStorage.getItem('hub_detail_font_size')) || 16;
 
     function openItemDetail(type, id) {
+      if (type === 'doc' && (isDocBatchMode || selectedDocIds.size > 0)) {
+        return;
+      }
+
       currentDetailType = type;
       let item = type === 'task' ? appState.tasks.find(t => t.id === id) : (type === 'bookmark' ? appState.bookmarks.find(b => b.id === id) : appState.docs.find(d => d.id === id));
       if (!item) return;
@@ -2207,7 +2643,6 @@
               const driveId = doc.driveId || extractDriveId(docLink);
               const isFolder = (doc.name || '').startsWith('[Thư mục]') || (doc.notes || '').includes('Thư mục trên Google Drive');
 
-              // XÓA THẲNG TRÊN GOOGLE DRIVE THÔNG QUA APPS SCRIPT
               if (appState.sheetUrl && (driveId || docLink.includes('drive.google.com') || isFolder)) {
                 fetch(appState.sheetUrl, {
                   method: 'POST',
@@ -2222,15 +2657,12 @@
                 }).catch(err => console.error('Lỗi xóa trên Drive:', err));
               }
 
-              // XÓA MỤC NÀY KHỎI WEB
               appState.docs = appState.docs.filter(d => String(d.id) !== String(id));
 
-              // NẾU XÓA MỘT THƯ MỤC: XÓA TIẾP TẤT CẢ TỆP TRỰC THUỘC THƯ MỤC ĐÓ
               if (isFolder) {
                 const cleanFolderName = itemName.replace('[Thư mục] ', '').trim();
                 appState.driveFolders = appState.driveFolders.filter(f => f.name.trim() !== cleanFolderName && f.id !== driveId);
 
-                // Xóa các tệp có parentFolderId là thư mục này hoặc ghi chú thuộc thư mục này
                 appState.docs = appState.docs.filter(d => {
                   if (driveId && d.parentFolderId === driveId) return false;
                   if ((d.notes || '').includes(`(${cleanFolderName})`)) return false;
@@ -2289,7 +2721,6 @@
       if (activeBtn) activeBtn.classList.add('nav-btn-active');
       if (headerTitle) headerTitle.innerText = titleMap[tabName] || 'Workspace';
 
-      // TỰ ĐỘNG QUÉT DRIVE KHI CHUYỂN VÀO MỤC TÀI LIỆU
       if (tabName === 'docs' && appState.sheetUrl) {
         scanAndSyncFromDrive(true);
       }
@@ -2876,7 +3307,21 @@
       const task = appState.tasks.find(t => String(t.id) === String(id));
       if (task) {
         task.done = !task.done;
+        if (task.done) {
+          task.completedAt = new Date().toISOString();
+          const idx = appState.tasks.findIndex(t => String(t.id) === String(id));
+          if (idx !== -1) {
+            const [completedItem] = appState.tasks.splice(idx, 1);
+            appState.tasks.push(completedItem);
+          }
+        } else {
+          delete task.completedAt;
+        }
+
         triggerAutoSave();
+        if (task.done) {
+          showToastNotification('Đã xong! Công việc chuyển xuống dưới & tự xóa sau 30 ngày.');
+        }
       }
     }
 
