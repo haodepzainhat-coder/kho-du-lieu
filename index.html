@@ -493,6 +493,11 @@
         </div>
       </div>
 
+      <!-- KHU VỰC 5 BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER -->
+      <div id="header-pinned-links" class="flex items-center space-x-1.5 px-2 py-1 rounded-2xl bg-zinc-100/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 shrink-0">
+        <!-- Render tự động 5 biểu tượng ghim -->
+      </div>
+
       <div class="flex items-center space-x-1.5 shrink-0">
         <button onclick="toggleTheme()" class="w-8 h-8 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 flex items-center justify-center transition" title="Đổi giao diện Sáng/Tối">
           <i id="theme-icon" class="fa-solid fa-sun text-xs"></i>
@@ -809,9 +814,9 @@
     ]);
 
     let loadedBookmarks = safeGetJson('hub_bookmarks', [
-      { id: '1', title: 'Pomodore', url: 'https://pomofocus.io', icon: '', subcats: ['Công cụ', 'Chung'], notes: 'Đồng hồ Pomodoro tập trung' },
-      { id: '2', title: 'Cổng quan lí (cũ)', url: 'https://daotao.edu.vn', icon: '', subcats: ['Trường học', 'Chung'], notes: 'Cổng thông tin đào tạo' },
-      { id: '3', title: 'Quản lí đoàn viên', url: 'https://quanlydoanvien.doanthanhnien.vn', icon: '', subcats: ['Trường học', 'Chung'], notes: 'Quản lý nghiệp vụ đoàn viên' }
+      { id: '1', title: 'Pomodore', url: 'https://pomofocus.io', icon: '', pinned: true, subcats: ['Công cụ', 'Chung'], notes: 'Đồng hồ Pomodoro tập trung' },
+      { id: '2', title: 'Cổng quan lí (cũ)', url: 'https://daotao.edu.vn', icon: '', pinned: true, subcats: ['Trường học', 'Chung'], notes: 'Cổng thông tin đào tạo' },
+      { id: '3', title: 'Quản lí đoàn viên', url: 'https://quanlydoanvien.doanthanhnien.vn', icon: '', pinned: true, subcats: ['Trường học', 'Chung'], notes: 'Quản lý nghiệp vụ đoàn viên' }
     ]);
 
     let loadedDocs = safeGetJson('hub_docs', [
@@ -1913,8 +1918,80 @@
       renderDocs();
       renderOverviewPreviews();
       renderTaskTicker();
+      renderPinnedHeaderLinks();
       updateBadges();
       updateDocBatchUI();
+    }
+
+    // ========================================================
+    // QUẢN LÝ 5 BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER
+    // ========================================================
+    function renderPinnedHeaderLinks() {
+      const container = document.getElementById('header-pinned-links');
+      if (!container) return;
+
+      const pinnedBookmarks = appState.bookmarks.filter(b => b.pinned);
+      const MAX_PINS = 5;
+
+      let slotsHtml = '';
+      for (let i = 0; i < MAX_PINS; i++) {
+        const item = pinnedBookmarks[i];
+        if (item) {
+          const iconHtml = renderBookmarkIconHtml(item, 'w-6 h-6', 'w-3.5 h-3.5');
+          slotsHtml += `
+            <div class="relative group/pin">
+              <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" 
+                class="w-7 h-7 rounded-xl flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700/80 transition-all hover:scale-105 shadow-xs" 
+                title="${escapeHtml(item.title)} (Bấm để mở web)">
+                ${iconHtml}
+              </a>
+              <button onclick="event.preventDefault(); event.stopPropagation(); togglePinBookmark('${item.id}')" 
+                class="hidden group-hover/pin:flex absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full items-center justify-center text-[8px] shadow-sm hover:scale-110 transition-transform" 
+                title="Bỏ ghim">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          `;
+        } else {
+          slotsHtml += `
+            <div onclick="handleTabNavigation('bookmarks')" 
+              class="w-7 h-7 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700/70 hover:border-amber-500/80 hover:bg-amber-500/10 flex items-center justify-center text-zinc-300 dark:text-zinc-600 hover:text-amber-500 cursor-pointer transition text-[10px]" 
+              title="Ô trống: Vào 'Kho liên kết' để ghim thêm web">
+              <i class="fa-solid fa-thumbtack text-[9px] opacity-60"></i>
+            </div>
+          `;
+        }
+      }
+
+      container.innerHTML = slotsHtml;
+    }
+
+    function togglePinBookmark(id, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+
+      const item = appState.bookmarks.find(b => String(b.id) === String(id));
+      if (!item) return;
+
+      const currentPinnedCount = appState.bookmarks.filter(b => b.pinned).length;
+
+      if (!item.pinned && currentPinnedCount >= 5) {
+        showToastNotification('Chỉ được ghim tối đa 5 liên kết! Vui lòng gỡ bớt link cũ.');
+        return;
+      }
+
+      item.pinned = !item.pinned;
+      triggerAutoSave();
+      renderPinnedHeaderLinks();
+      renderBookmarks();
+
+      if (item.pinned) {
+        showToastNotification(`Đã ghim "${item.title}" lên thanh mở nhanh!`);
+      } else {
+        showToastNotification(`Đã bỏ ghim "${item.title}".`);
+      }
     }
 
     function getTaskDeadlineInfo(dateStr) {
@@ -2241,13 +2318,19 @@
                   </div>
                   ${iconHtml}
                   <div class="min-w-0 flex-1">
-                    <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate hover:text-indigo-600 block">${escapeHtml(b.title)}</p>
+                    <div class="flex items-center space-x-1.5">
+                      <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate hover:text-indigo-600 block">${escapeHtml(b.title)}</p>
+                      ${b.pinned ? '<i class="fa-solid fa-thumbtack text-amber-500 text-[10px] shrink-0" title="Đã ghim mở nhanh"></i>' : ''}
+                    </div>
                     <div class="flex items-center space-x-1 mt-0.5 flex-wrap gap-y-0.5 overflow-hidden">
                       ${subcatsHtml}
                     </div>
                   </div>
                 </div>
                 <div class="flex items-center space-x-1 shrink-0">
+                  <button onclick="togglePinBookmark('${b.id}', event)" class="${b.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-zinc-400 hover:text-amber-500'} p-1 text-xs transition-colors" title="${b.pinned ? 'Bỏ ghim khỏi thanh trên' : 'Ghim lên thanh mở nhanh (Tối đa 5 link)'}">
+                    <i class="fa-solid fa-thumbtack ${b.pinned ? 'rotate-45' : ''}"></i>
+                  </button>
                   <button onclick="moveItemOrder('bookmarks', '${b.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển lên trước"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
                   <button onclick="moveItemOrder('bookmarks', '${b.id}', 'down', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển ra sau"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
                   <button onclick="openEditBookmarkModal('${b.id}')" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
