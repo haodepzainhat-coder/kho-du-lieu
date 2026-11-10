@@ -495,9 +495,9 @@
         </div>
       </div>
 
-      <!-- KHU VỰC 5 BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER -->
-      <div id="header-pinned-links" class="flex items-center space-x-1.5 px-2 py-1 rounded-2xl bg-zinc-100/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 shrink-0">
-        <!-- Render tự động 5 biểu tượng ghim -->
+      <!-- KHU VỰC BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER (MỞ RỘNG 8 Ô) -->
+      <div id="header-pinned-links" class="flex items-center space-x-1.5 px-2 py-1 rounded-2xl bg-zinc-100/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 shrink-0 max-w-[210px] sm:max-w-[320px] md:max-w-[440px] overflow-x-auto">
+        <!-- Render tự động 8 biểu tượng ghim -->
       </div>
 
       <div class="flex items-center space-x-1.5 shrink-0">
@@ -1926,17 +1926,17 @@
     }
 
     // ========================================================
-    // QUẢN LÝ 5 BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER
+    // QUẢN LÝ 8 BIỂU TƯỢNG GHIM MỞ NHANH TRÊN HEADER
     // ========================================================
     function renderPinnedHeaderLinks() {
       const container = document.getElementById('header-pinned-links');
       if (!container) return;
 
       const pinnedBookmarks = appState.bookmarks.filter(b => b.pinned);
-      const MAX_PINS = 5;
+      const MAX_PINS = 8;
 
       let slotsHtml = `
-        <div class="hidden xl:flex items-center text-[10px] text-zinc-400 font-semibold mr-1 space-x-1">
+        <div class="hidden xl:flex items-center text-[10px] text-zinc-400 font-semibold mr-1 space-x-1 shrink-0">
           <i class="fa-solid fa-thumbtack text-amber-500 text-[9px]"></i>
           <span>Mở nhanh:</span>
         </div>
@@ -1947,7 +1947,7 @@
         if (item) {
           const iconHtml = renderBookmarkIconHtml(item, 'w-6 h-6', 'w-3.5 h-3.5');
           slotsHtml += `
-            <div class="relative group/pin">
+            <div class="relative group/pin shrink-0">
               <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" 
                 class="w-7 h-7 rounded-xl flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700/80 transition-all hover:scale-105 shadow-xs" 
                 title="${escapeHtml(item.title)} (Bấm để mở web)">
@@ -1963,7 +1963,7 @@
         } else {
           slotsHtml += `
             <div onclick="openQuickPinManagerModal()" 
-              class="w-7 h-7 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700/70 hover:border-amber-500/80 hover:bg-amber-500/10 flex items-center justify-center text-zinc-300 dark:text-zinc-600 hover:text-amber-500 cursor-pointer transition text-[10px]" 
+              class="w-7 h-7 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700/70 hover:border-amber-500/80 hover:bg-amber-500/10 flex items-center justify-center text-zinc-300 dark:text-zinc-600 hover:text-amber-500 cursor-pointer transition text-[10px] shrink-0" 
               title="Ô trống: Bấm để chọn ghim web nhanh">
               <i class="fa-solid fa-plus text-[9px] opacity-70"></i>
             </div>
@@ -2007,10 +2007,10 @@
       }).join('');
 
       openModal(
-        `Quản lý ghim mở nhanh (${pinnedCount}/5)`,
+        `Quản lý ghim mở nhanh (${pinnedCount}/8)`,
         `
           <div class="space-y-2 text-xs">
-            <p class="text-zinc-600 dark:text-zinc-400">Chọn tối đa 5 liên kết thường dùng nhất để ghim lên thanh Header mở nhanh:</p>
+            <p class="text-zinc-600 dark:text-zinc-400">Chọn tối đa 8 liên kết thường dùng nhất để ghim lên thanh Header mở nhanh:</p>
             <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
               ${listHtml}
             </div>
@@ -2032,8 +2032,8 @@
 
       const currentPinnedCount = appState.bookmarks.filter(b => b.pinned).length;
 
-      if (!item.pinned && currentPinnedCount >= 5) {
-        showToastNotification('Chỉ được ghim tối đa 5 liên kết! Vui lòng gỡ bớt link cũ.');
+      if (!item.pinned && currentPinnedCount >= 8) {
+        showToastNotification('Chỉ được ghim tối đa 8 liên kết! Vui lòng gỡ bớt link cũ.');
         return;
       }
 
@@ -2133,9 +2133,30 @@
       return (words.length >= 2 ? words[0][0] + words[1][0] : clean.slice(0, 2)).toUpperCase();
     }
 
+    // DANH SÁCH CÁC MẪU LOGO / ICON CÓ SẴN
+    const LOGO_PRESETS = [
+      { id: 'auto', label: 'Tự động', icon: '', fa: 'fa-solid fa-globe', color: 'text-zinc-400' },
+      { id: 'study', label: 'Học tập', icon: 'fa-solid fa-graduation-cap text-indigo-500', fa: 'fa-solid fa-graduation-cap', color: 'text-indigo-500' },
+      { id: 'youth', label: 'Đoàn - Hội', icon: 'fa-solid fa-flag text-rose-500', fa: 'fa-solid fa-flag', color: 'text-rose-500' },
+      { id: 'code', label: 'Lập trình', icon: 'fa-solid fa-code text-cyan-500', fa: 'fa-solid fa-code', color: 'text-cyan-500' },
+      { id: 'google', label: 'Google', icon: 'fa-brands fa-google text-red-500', fa: 'fa-brands fa-google', color: 'text-red-500' },
+      { id: 'drive', label: 'Drive', icon: 'fa-brands fa-google-drive text-amber-500', fa: 'fa-brands fa-google-drive', color: 'text-amber-500' },
+      { id: 'github', label: 'GitHub', icon: 'fa-brands fa-github text-zinc-800 dark:text-zinc-200', fa: 'fa-brands fa-github', color: 'text-zinc-700 dark:text-zinc-300' },
+      { id: 'youtube', label: 'YouTube', icon: 'fa-brands fa-youtube text-rose-600', fa: 'fa-brands fa-youtube', color: 'text-rose-600' },
+      { id: 'facebook', label: 'Facebook', icon: 'fa-brands fa-facebook text-blue-600', fa: 'fa-brands fa-facebook', color: 'text-blue-600' },
+      { id: 'ai', label: 'ChatGPT', icon: 'fa-solid fa-robot text-emerald-500', fa: 'fa-solid fa-robot', color: 'text-emerald-500' },
+      { id: 'book', label: 'Sách vở', icon: 'fa-solid fa-book-bookmark text-amber-600', fa: 'fa-solid fa-book-bookmark', color: 'text-amber-600' },
+      { id: 'doc', label: 'Tài liệu', icon: 'fa-solid fa-file-lines text-blue-500', fa: 'fa-solid fa-file-lines', color: 'text-blue-500' },
+      { id: 'canva', label: 'Canva', icon: 'fa-solid fa-palette text-purple-500', fa: 'fa-solid fa-palette', color: 'text-purple-500' },
+      { id: 'mail', label: 'Hòm thư', icon: 'fa-solid fa-envelope text-red-400', fa: 'fa-solid fa-envelope', color: 'text-red-400' },
+      { id: 'chat', label: 'Nhắn tin', icon: 'fa-solid fa-comments text-teal-500', fa: 'fa-solid fa-comments', color: 'text-teal-500' },
+      { id: 'star', label: 'Ưu tiên', icon: 'fa-solid fa-star text-amber-400', fa: 'fa-solid fa-star', color: 'text-amber-400' }
+    ];
+
     function renderBookmarkIconHtml(b, sizeClass = 'w-7 h-7', imgSizeClass = 'w-4 h-4') {
       if (b.icon && b.icon.trim()) {
         const custom = b.icon.trim();
+        // Link hình ảnh online
         if (custom.startsWith('http') || custom.startsWith('data:')) {
           return `
             <div class="${sizeClass} rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
@@ -2143,6 +2164,20 @@
             </div>
           `;
         }
+        // Icon FontAwesome
+        if (custom.includes('fa-')) {
+          return `
+            <div class="${sizeClass} rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 shadow-sm text-xs">
+              <i class="${escapeHtml(custom)}"></i>
+            </div>
+          `;
+        }
+        // Emoji hoặc ký tự đặc biệt
+        return `
+          <div class="${sizeClass} rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 shadow-sm text-xs">
+            <span>${escapeHtml(custom)}</span>
+          </div>
+        `;
       }
 
       let cleanUrl = (b.url || '').trim();
@@ -2173,6 +2208,90 @@
         `;
       } catch (e) {
         return `<div class="${sizeClass} rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 text-white font-bold text-[9px]">${escapeHtml(initials)}</div>`;
+      }
+    }
+
+    function renderIconPresetPickerHtml(currentVal = '', inputId = 'modal-bm-icon') {
+      const presetsButtons = LOGO_PRESETS.map(p => {
+        const isSelected = (currentVal === p.icon) || (!currentVal && p.id === 'auto');
+        return `
+          <button type="button" onclick="selectLogoPreset('${inputId}', '${escapeHtml(p.icon)}', this)" 
+            class="preset-logo-btn p-1.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition text-center hover:scale-105 ${
+              isSelected 
+                ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/70 border-indigo-400 font-semibold' 
+                : 'bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700/80 text-zinc-600 dark:text-zinc-300'
+            }" title="${p.label}">
+            <i class="${p.fa} ${p.color} text-sm"></i>
+            <span class="text-[9px] truncate max-w-full block leading-none">${p.label}</span>
+          </button>
+        `;
+      }).join('');
+
+      let previewInner = '<i class="fa-solid fa-globe text-zinc-400 text-xs"></i>';
+      if (currentVal) {
+        if (currentVal.startsWith('http') || currentVal.startsWith('data:')) {
+          previewInner = `<img src="${escapeHtml(currentVal)}" class="w-4 h-4 object-contain">`;
+        } else if (currentVal.includes('fa-')) {
+          previewInner = `<i class="${escapeHtml(currentVal)} text-xs"></i>`;
+        } else {
+          previewInner = `<span class="text-xs font-bold">${escapeHtml(currentVal)}</span>`;
+        }
+      }
+
+      return `
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-zinc-600 dark:text-zinc-400 text-[11px] font-medium">Chọn biểu tượng / Logo mẫu</label>
+            <span class="text-[10px] text-zinc-400">Bấm để gán ngay</span>
+          </div>
+          <div class="logo-preset-container grid grid-cols-4 sm:grid-cols-8 gap-1.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/70 max-h-28 overflow-y-auto">
+            ${presetsButtons}
+          </div>
+          <div class="pt-1">
+            <label class="block text-zinc-600 dark:text-zinc-400 text-[10px] mb-1">Hoặc dán link ảnh logo riêng / Emoji</label>
+            <div class="flex items-center space-x-2">
+              <div id="${inputId}-preview" class="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0 shadow-xs">
+                ${previewInner}
+              </div>
+              <input type="text" id="${inputId}" value="${escapeHtml(currentVal)}" oninput="updateLogoPreview('${inputId}')" 
+                class="flex-1 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" 
+                placeholder="Link ảnh (.png, .jpg) hoặc emoji...">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectLogoPreset(inputId, iconVal, btnEl) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.value = iconVal;
+      }
+      const parent = btnEl.closest('.logo-preset-container');
+      if (parent) {
+        parent.querySelectorAll('.preset-logo-btn').forEach(b => {
+          b.className = 'preset-logo-btn p-1.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition text-center hover:scale-105 bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700/80 text-zinc-600 dark:text-zinc-300';
+        });
+        btnEl.className = 'preset-logo-btn p-1.5 rounded-xl border flex flex-col items-center justify-center space-y-1 transition text-center hover:scale-105 ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-950/70 border-indigo-400 font-semibold';
+      }
+      updateLogoPreview(inputId);
+    }
+
+    function updateLogoPreview(inputId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(inputId + '-preview');
+      if (!input || !preview) return;
+      const val = input.value.trim();
+      if (!val) {
+        preview.innerHTML = '<i class="fa-solid fa-globe text-zinc-400 text-xs"></i>';
+        return;
+      }
+      if (val.startsWith('http') || val.startsWith('data:')) {
+        preview.innerHTML = `<img src="${escapeHtml(val)}" class="w-4 h-4 object-contain" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-image text-zinc-400 text-xs\\'></i>'">`;
+      } else if (val.includes('fa-')) {
+        preview.innerHTML = `<i class="${escapeHtml(val)} text-xs"></i>`;
+      } else {
+        preview.innerHTML = `<span class="text-xs font-bold">${escapeHtml(val)}</span>`;
       }
     }
 
@@ -2387,7 +2506,7 @@
                     b.pinned 
                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-semibold' 
                       : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-amber-500 hover:border-amber-400'
-                  }" title="${b.pinned ? 'Bấm để bỏ ghim khỏi thanh trên' : 'Bấm để ghim lên thanh mở nhanh (Tối đa 5 link)'}">
+                  }" title="${b.pinned ? 'Bấm để bỏ ghim khỏi thanh trên' : 'Bấm để ghim lên thanh mở nhanh (Tối đa 8 link)'}">
                     <i class="fa-solid fa-thumbtack text-[9px] ${b.pinned ? 'rotate-45 text-amber-500' : ''}"></i>
                     <span>${b.pinned ? 'Đã ghim' : 'Ghim'}</span>
                   </button>
@@ -2418,16 +2537,15 @@
     }
 
     // ========================================================
-    // RENDER TÀI LIỆU & CHẾ ĐỘ CHỌN HÀNG LOẠT (TỰ TẮT KHI = 0, ICON BO GÓC)
+    // QUẢN LÝ CHỌN HÀNG LOẠT VÀ DI CHUYỂN TÀI LIỆU
     // ========================================================
     function toggleDocBatchMode() {
-      if (selectedDocIds.size > 0) {
-        exitDocBatchMode();
-      } else {
-        isDocBatchMode = true;
-        updateDocBatchUI();
-        renderDocs();
+      isDocBatchMode = !isDocBatchMode;
+      if (!isDocBatchMode) {
+        selectedDocIds.clear();
       }
+      updateDocBatchUI();
+      renderDocs();
     }
 
     function exitDocBatchMode() {
@@ -2437,48 +2555,10 @@
       renderDocs();
     }
 
-    function updateDocBatchUI() {
-      const toolbar = document.getElementById('docs-batch-toolbar');
-      const countEl = document.getElementById('docs-selected-count');
-      const btnText = document.getElementById('batch-mode-btn-text');
-      const btnBatch = document.getElementById('btn-toggle-doc-batch');
-
-      if (!toolbar) return;
-
-      if (selectedDocIds.size === 0) {
-        isDocBatchMode = false;
-        toolbar.classList.add('hidden');
-        if (btnBatch) {
-          btnBatch.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
-          btnBatch.classList.add('bg-zinc-100', 'text-zinc-700', 'dark:bg-zinc-800');
-        }
-        if (btnText) btnText.innerText = 'Chọn nhiều';
-        return;
-      }
-
-      toolbar.classList.remove('hidden');
-      if (countEl) countEl.innerText = selectedDocIds.size;
-      if (btnBatch) {
-        btnBatch.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
-        btnBatch.classList.remove('bg-zinc-100', 'text-zinc-700', 'dark:bg-zinc-800');
-      }
-      if (btnText) btnText.innerText = 'Đang chọn';
-
-      const btnSelectAll = document.getElementById('btn-select-all-docs');
-      if (btnSelectAll) {
-        const filter = appState.activeFilter.docs || 'Tất cả';
-        let currentList = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
-        if (currentList.length > 0 && selectedDocIds.size >= currentList.length) {
-          btnSelectAll.innerText = 'Bỏ chọn tất cả';
-        } else {
-          btnSelectAll.innerText = 'Chọn tất cả';
-        }
-      }
-    }
-
     function toggleSelectDoc(id, event) {
       if (event) {
         event.stopPropagation();
+        event.preventDefault();
       }
       const strId = String(id);
       if (selectedDocIds.has(strId)) {
@@ -2486,30 +2566,60 @@
       } else {
         selectedDocIds.add(strId);
       }
-
       if (selectedDocIds.size === 0) {
         isDocBatchMode = false;
       } else {
         isDocBatchMode = true;
       }
-
       updateDocBatchUI();
       renderDocs();
     }
 
     function toggleSelectAllDocs() {
       const filter = appState.activeFilter.docs || 'Tất cả';
-      let currentList = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
+      let currentFiltered = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
+      if (searchQuery) {
+        currentFiltered = currentFiltered.filter(d => 
+          (d.name || '').toLowerCase().includes(searchQuery) ||
+          (d.notes || '').toLowerCase().includes(searchQuery) ||
+          (d.subcats || []).some(s => s.toLowerCase().includes(searchQuery))
+        );
+      }
 
-      if (selectedDocIds.size >= currentList.length) {
+      if (selectedDocIds.size === currentFiltered.length && currentFiltered.length > 0) {
         selectedDocIds.clear();
         isDocBatchMode = false;
       } else {
-        currentList.forEach(d => selectedDocIds.add(String(d.id)));
+        selectedDocIds.clear();
+        currentFiltered.forEach(d => selectedDocIds.add(String(d.id)));
         isDocBatchMode = true;
       }
       updateDocBatchUI();
       renderDocs();
+    }
+
+    function updateDocBatchUI() {
+      const toolbar = document.getElementById('docs-batch-toolbar');
+      const countEl = document.getElementById('docs-selected-count');
+      const btnAll = document.getElementById('btn-select-all-docs');
+      const batchBtnText = document.getElementById('batch-mode-btn-text');
+
+      if (countEl) countEl.innerText = selectedDocIds.size;
+
+      if (selectedDocIds.size > 0) {
+        if (toolbar) toolbar.classList.remove('hidden');
+        if (batchBtnText) batchBtnText.innerText = `Đang chọn (${selectedDocIds.size})`;
+      } else {
+        if (toolbar) toolbar.classList.add('hidden');
+        if (batchBtnText) batchBtnText.innerText = 'Chọn nhiều';
+        isDocBatchMode = false;
+      }
+
+      const filter = appState.activeFilter.docs || 'Tất cả';
+      let currentFiltered = filter === 'Tất cả' ? appState.docs : appState.docs.filter(d => (d.subcats || []).includes(filter));
+      if (btnAll) {
+        btnAll.innerText = (selectedDocIds.size > 0 && selectedDocIds.size === currentFiltered.length) ? 'Bỏ chọn tất cả' : 'Chọn tất cả';
+      }
     }
 
     function openBatchMoveSubcatModal() {
@@ -2519,24 +2629,24 @@
       }
 
       const subcats = (appState.subcategories.docs || []).filter(s => s !== 'Tất cả');
-      const radioOptions = subcats.map((cat, idx) => `
+      const radioOptions = subcats.map((s, idx) => `
         <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 cursor-pointer hover:border-indigo-500 transition">
-          <input type="radio" name="batch-target-subcat" value="${escapeHtml(cat)}" ${idx === 0 ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
-          <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200">${escapeHtml(cat)}</span>
+          <input type="radio" name="batch-target-subcat" value="${escapeHtml(s)}" ${idx === 0 ? 'checked' : ''} class="text-indigo-600 focus:ring-indigo-500">
+          <span class="text-xs font-medium text-zinc-800 dark:text-zinc-200">${escapeHtml(s)}</span>
         </label>
       `).join('');
 
       openModal(
-        `Di chuyển ${selectedDocIds.size} tài liệu sang Mục nhỏ`,
+        `Chuyển ${selectedDocIds.size} tài liệu sang mục khác`,
         `
-          <div class="space-y-2 text-xs">
-            <p class="text-zinc-600 dark:text-zinc-400">Chọn mục nhỏ bạn muốn chuyển các tài liệu đã chọn tới:</p>
+          <div class="space-y-2.5 text-xs">
+            <p class="text-zinc-600 dark:text-zinc-400">Chọn mục nhỏ bạn muốn chuyển các tài liệu này vào:</p>
             <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
               ${radioOptions}
             </div>
-            <div class="pt-2 flex items-center space-x-2">
-              <input type="checkbox" id="batch-subcat-replace" checked class="rounded text-indigo-600">
-              <label for="batch-subcat-replace" class="text-[11px] text-zinc-500 cursor-pointer">Thay thế mục cũ (Bỏ chọn nếu muốn thêm kèm)</label>
+            <div class="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center space-x-2">
+              <input type="checkbox" id="batch-subcat-replace" class="rounded text-indigo-600 focus:ring-indigo-500">
+              <label for="batch-subcat-replace" class="text-zinc-600 dark:text-zinc-400 select-none cursor-pointer">Thay thế các mục nhỏ cũ (thay vì thêm vào)</label>
             </div>
           </div>
         `,
@@ -2831,6 +2941,7 @@
       const linkBox = document.getElementById('detail-link-box');
       const primaryLink = document.getElementById('detail-primary-link');
       const editBtn = document.getElementById('detail-edit-btn');
+      const pinBtn = document.getElementById('detail-pin-btn');
 
       bodyText.style.fontSize = `${detailFontSize}px`;
       const fontIndicator = document.getElementById('detail-font-indicator');
@@ -3265,20 +3376,22 @@
             <input type="url" id="modal-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none font-mono" placeholder="https://...">
           </div>
           <div>
-            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Logo tùy chọn (để trống tự lấy theo Web)</label>
-            <input type="text" id="modal-bm-icon" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="Link ảnh .png, .jpg (tùy chọn)">
+            ${renderIconPresetPickerHtml('', 'modal-bm-icon')}
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục phân loại (Mặc định "Chung")</label>
             ${renderCustomSubcatSelector('bookmarks', [defaultSubcat], 'modal-bm-subcats', 'Chung')}
           </div>
-          <div class="flex items-center space-x-2 pt-1">
-            <input type="checkbox" id="modal-bm-pinned" class="rounded text-amber-500 focus:ring-amber-400">
-            <label for="modal-bm-pinned" class="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer font-medium flex items-center gap-1">
-              <i class="fa-solid fa-thumbtack text-amber-500 text-[10px]"></i>
-              <span>Ghim lên thanh mở nhanh (Tối đa 5 link)</span>
-            </label>
-          </div>
+          <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/80 cursor-pointer hover:border-amber-400 transition select-none group">
+            <input type="checkbox" id="modal-bm-pinned" class="hidden peer">
+            <div class="w-5 h-5 rounded-lg border-2 border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 flex items-center justify-center peer-checked:bg-amber-500 peer-checked:border-amber-500 peer-checked:text-white text-transparent transition-all shadow-xs shrink-0">
+              <i class="fa-solid fa-check text-[10px]"></i>
+            </div>
+            <span class="text-xs text-zinc-700 dark:text-zinc-300 font-medium flex items-center gap-1.5">
+              <i class="fa-solid fa-thumbtack text-amber-500 text-xs"></i>
+              <span>Ghim lên thanh mở nhanh (Tối đa 8 link)</span>
+            </span>
+          </label>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
             <textarea id="modal-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="VD: Tài khoản đăng nhập..."></textarea>
@@ -3320,20 +3433,22 @@
             <input type="url" id="modal-edit-bm-url" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none font-mono" value="${escapeHtml(bm.url)}">
           </div>
           <div>
-            <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Logo tùy chọn</label>
-            <input type="text" id="modal-edit-bm-icon" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" value="${escapeHtml(bm.icon || '')}">
+            ${renderIconPresetPickerHtml(bm.icon || '', 'modal-edit-bm-icon')}
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục phân loại</label>
             ${renderCustomSubcatSelector('bookmarks', bm.subcats || ['Chung'], 'modal-edit-bm-subcats', 'Chung')}
           </div>
-          <div class="flex items-center space-x-2 pt-1">
-            <input type="checkbox" id="modal-edit-bm-pinned" class="rounded text-amber-500 focus:ring-amber-400" ${bm.pinned ? 'checked' : ''}>
-            <label for="modal-edit-bm-pinned" class="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer font-medium flex items-center gap-1">
-              <i class="fa-solid fa-thumbtack text-amber-500 text-[10px]"></i>
-              <span>Ghim lên thanh mở nhanh (Tối đa 5 link)</span>
-            </label>
-          </div>
+          <label class="flex items-center space-x-2.5 p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/80 cursor-pointer hover:border-amber-400 transition select-none group">
+            <input type="checkbox" id="modal-edit-bm-pinned" class="hidden peer" ${bm.pinned ? 'checked' : ''}>
+            <div class="w-5 h-5 rounded-lg border-2 border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 flex items-center justify-center peer-checked:bg-amber-500 peer-checked:border-amber-500 peer-checked:text-white text-transparent transition-all shadow-xs shrink-0">
+              <i class="fa-solid fa-check text-[10px]"></i>
+            </div>
+            <span class="text-xs text-zinc-700 dark:text-zinc-300 font-medium flex items-center gap-1.5">
+              <i class="fa-solid fa-thumbtack text-amber-500 text-xs"></i>
+              <span>Ghim lên thanh mở nhanh (Tối đa 8 link)</span>
+            </span>
+          </label>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
             <textarea id="modal-edit-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${bm.notes || ''}</textarea>
