@@ -393,6 +393,8 @@
       <div class="px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-between shrink-0">
         <span class="text-[10px] text-zinc-400">Xem chi tiết</span>
         <div class="flex items-center space-x-2">
+          <!-- NÚT GHIM TRỰC TIẾP TRONG CỬA SỔ CHI TIẾT -->
+          <button id="detail-pin-btn" class="hidden px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center space-x-1.5 shadow-sm"></button>
           <button id="detail-edit-btn" class="px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition flex items-center space-x-1">
             <i class="fa-solid fa-pen-to-square text-[10px]"></i>
             <span>Sửa</span>
@@ -1933,7 +1935,13 @@
       const pinnedBookmarks = appState.bookmarks.filter(b => b.pinned);
       const MAX_PINS = 5;
 
-      let slotsHtml = '';
+      let slotsHtml = `
+        <div class="hidden xl:flex items-center text-[10px] text-zinc-400 font-semibold mr-1 space-x-1">
+          <i class="fa-solid fa-thumbtack text-amber-500 text-[9px]"></i>
+          <span>Mở nhanh:</span>
+        </div>
+      `;
+
       for (let i = 0; i < MAX_PINS; i++) {
         const item = pinnedBookmarks[i];
         if (item) {
@@ -1954,16 +1962,63 @@
           `;
         } else {
           slotsHtml += `
-            <div onclick="handleTabNavigation('bookmarks')" 
+            <div onclick="openQuickPinManagerModal()" 
               class="w-7 h-7 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700/70 hover:border-amber-500/80 hover:bg-amber-500/10 flex items-center justify-center text-zinc-300 dark:text-zinc-600 hover:text-amber-500 cursor-pointer transition text-[10px]" 
-              title="Ô trống: Vào 'Kho liên kết' để ghim thêm web">
-              <i class="fa-solid fa-thumbtack text-[9px] opacity-60"></i>
+              title="Ô trống: Bấm để chọn ghim web nhanh">
+              <i class="fa-solid fa-plus text-[9px] opacity-70"></i>
             </div>
           `;
         }
       }
 
       container.innerHTML = slotsHtml;
+    }
+
+    function openQuickPinManagerModal() {
+      if (appState.bookmarks.length === 0) {
+        alertModal('Chưa có liên kết', 'Bạn chưa lưu trang web nào trong Kho liên kết để ghim.');
+        return;
+      }
+
+      const pinnedCount = appState.bookmarks.filter(b => b.pinned).length;
+
+      const listHtml = appState.bookmarks.map(b => {
+        const iconHtml = renderBookmarkIconHtml(b, 'w-6 h-6', 'w-3.5 h-3.5');
+        return `
+          <div class="flex items-center justify-between p-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80">
+            <div class="flex items-center space-x-2.5 min-w-0 pr-2">
+              ${iconHtml}
+              <div class="min-w-0">
+                <p class="font-semibold text-xs text-zinc-800 dark:text-zinc-200 truncate">${escapeHtml(b.title)}</p>
+                <p class="text-[10px] text-zinc-400 font-mono truncate">${escapeHtml(b.url)}</p>
+              </div>
+            </div>
+            <button onclick="togglePinBookmark('${b.id}'); openQuickPinManagerModal();" 
+              class="px-2.5 py-1 rounded-xl text-xs font-semibold transition shrink-0 flex items-center space-x-1 ${
+                b.pinned 
+                  ? 'bg-amber-500 text-white shadow-sm' 
+                  : 'bg-zinc-200 dark:bg-zinc-700 hover:bg-amber-500 hover:text-white text-zinc-700 dark:text-zinc-200'
+              }">
+              <i class="fa-solid fa-thumbtack ${b.pinned ? 'rotate-45' : ''} text-[10px]"></i>
+              <span>${b.pinned ? 'Đã ghim' : 'Ghim'}</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      openModal(
+        `Quản lý ghim mở nhanh (${pinnedCount}/5)`,
+        `
+          <div class="space-y-2 text-xs">
+            <p class="text-zinc-600 dark:text-zinc-400">Chọn tối đa 5 liên kết thường dùng nhất để ghim lên thanh Header mở nhanh:</p>
+            <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              ${listHtml}
+            </div>
+          </div>
+        `,
+        () => closeModal(),
+        'Hoàn tất'
+      );
     }
 
     function togglePinBookmark(id, event) {
@@ -2320,7 +2375,6 @@
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center space-x-1.5">
                       <p class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate hover:text-indigo-600 block">${escapeHtml(b.title)}</p>
-                      ${b.pinned ? '<i class="fa-solid fa-thumbtack text-amber-500 text-[10px] shrink-0" title="Đã ghim mở nhanh"></i>' : ''}
                     </div>
                     <div class="flex items-center space-x-1 mt-0.5 flex-wrap gap-y-0.5 overflow-hidden">
                       ${subcatsHtml}
@@ -2328,8 +2382,14 @@
                   </div>
                 </div>
                 <div class="flex items-center space-x-1 shrink-0">
-                  <button onclick="togglePinBookmark('${b.id}', event)" class="${b.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-zinc-400 hover:text-amber-500'} p-1 text-xs transition-colors" title="${b.pinned ? 'Bỏ ghim khỏi thanh trên' : 'Ghim lên thanh mở nhanh (Tối đa 5 link)'}">
-                    <i class="fa-solid fa-thumbtack ${b.pinned ? 'rotate-45' : ''}"></i>
+                  <!-- NÚT GHIM CÓ CHỮ RÕ RÀNG TRÊN MỖI THẺ -->
+                  <button onclick="togglePinBookmark('${b.id}', event)" class="px-2 py-0.5 rounded-lg text-[10px] font-medium border flex items-center space-x-1 transition-all ${
+                    b.pinned 
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-semibold' 
+                      : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:text-amber-500 hover:border-amber-400'
+                  }" title="${b.pinned ? 'Bấm để bỏ ghim khỏi thanh trên' : 'Bấm để ghim lên thanh mở nhanh (Tối đa 5 link)'}">
+                    <i class="fa-solid fa-thumbtack text-[9px] ${b.pinned ? 'rotate-45 text-amber-500' : ''}"></i>
+                    <span>${b.pinned ? 'Đã ghim' : 'Ghim'}</span>
                   </button>
                   <button onclick="moveItemOrder('bookmarks', '${b.id}', 'up', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển lên trước"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>
                   <button onclick="moveItemOrder('bookmarks', '${b.id}', 'down', event)" class="text-zinc-400 hover:text-indigo-600 p-1 text-xs" title="Chuyển ra sau"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>
@@ -2798,17 +2858,36 @@
         `;
         bodyText.innerHTML = item.notes ? formatNoteWithLinks(item.notes, true) : '<span class="text-zinc-400 italic">Không có ghi chú.</span>';
         linkBox.classList.add('hidden');
+        if (pinBtn) pinBtn.classList.add('hidden');
         editBtn.onclick = () => { closeItemDetail(); openEditTaskModal(item.id); };
 
       } else if (type === 'bookmark') {
         badge.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold border bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900';
         badge.innerHTML = 'Kho liên kết';
         titleEl.innerText = item.title;
-        metaBar.innerHTML = `<span class="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium">Mục: ${escapeHtml(subcatLabels)}</span>`;
+        metaBar.innerHTML = `
+          <span class="text-[11px] px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-medium">Mục: ${escapeHtml(subcatLabels)}</span>
+          ${item.pinned ? '<span class="text-[11px] px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold"><i class="fa-solid fa-thumbtack mr-1"></i>Đã ghim</span>' : ''}
+        `;
         bodyText.innerHTML = item.notes ? formatNoteWithLinks(item.notes, true) : '<span class="text-zinc-400 italic">Không có ghi chú.</span>';
         linkBox.classList.remove('hidden');
         primaryLink.href = item.url;
         primaryLink.innerHTML = `${escapeHtml(item.url)} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>`;
+
+        // HIỂN THỊ NÚT GHIM TRONG MODAL CHI TIẾT
+        const pinBtn = document.getElementById('detail-pin-btn');
+        if (pinBtn) {
+          pinBtn.classList.remove('hidden');
+          pinBtn.className = item.pinned
+            ? 'px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1.5'
+            : 'px-3 py-1.5 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-amber-500 hover:text-white text-zinc-700 dark:text-zinc-200 text-xs font-medium transition flex items-center space-x-1.5';
+          pinBtn.innerHTML = `<i class="fa-solid fa-thumbtack ${item.pinned ? 'rotate-45' : ''} text-[10px]"></i><span>${item.pinned ? 'Đã ghim (Bỏ ghim)' : 'Ghim lên thanh'}</span>`;
+          pinBtn.onclick = () => {
+            togglePinBookmark(item.id);
+            openItemDetail('bookmark', item.id);
+          };
+        }
+
         editBtn.onclick = () => { closeItemDetail(); openEditBookmarkModal(item.id); };
 
       } else if (type === 'doc') {
@@ -2821,6 +2900,8 @@
         linkBox.classList.remove('hidden');
         primaryLink.href = item.link;
         primaryLink.innerHTML = `${escapeHtml(item.link)} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>`;
+        const pinBtn = document.getElementById('detail-pin-btn');
+        if (pinBtn) pinBtn.classList.add('hidden');
         editBtn.onclick = () => { closeItemDetail(); openEditDocModal(item.id); };
       }
 
@@ -3191,6 +3272,13 @@
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục phân loại (Mặc định "Chung")</label>
             ${renderCustomSubcatSelector('bookmarks', [defaultSubcat], 'modal-bm-subcats', 'Chung')}
           </div>
+          <div class="flex items-center space-x-2 pt-1">
+            <input type="checkbox" id="modal-bm-pinned" class="rounded text-amber-500 focus:ring-amber-400">
+            <label for="modal-bm-pinned" class="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer font-medium flex items-center gap-1">
+              <i class="fa-solid fa-thumbtack text-amber-500 text-[10px]"></i>
+              <span>Ghim lên thanh mở nhanh (Tối đa 5 link)</span>
+            </label>
+          </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
             <textarea id="modal-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none" placeholder="VD: Tài khoản đăng nhập..."></textarea>
@@ -3200,6 +3288,7 @@
           const title = document.getElementById('modal-bm-title').value.trim();
           let url = document.getElementById('modal-bm-url').value.trim();
           const icon = (document.getElementById('modal-bm-icon')?.value || '').trim();
+          const pinned = document.getElementById('modal-bm-pinned')?.checked || false;
           let subcats = ['Chung'];
           try { subcats = JSON.parse(document.getElementById('modal-bm-subcats').value); } catch(e) {}
           const notes = document.getElementById('modal-bm-notes').value.trim();
@@ -3207,7 +3296,7 @@
           if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
 
           if (title && url) {
-            appState.bookmarks.push({ id: Date.now().toString(), title, url, icon, subcats, notes });
+            appState.bookmarks.push({ id: Date.now().toString(), title, url, icon, pinned, subcats, notes });
             triggerAutoSave();
             closeModal();
           }
@@ -3238,6 +3327,13 @@
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Mục phân loại</label>
             ${renderCustomSubcatSelector('bookmarks', bm.subcats || ['Chung'], 'modal-edit-bm-subcats', 'Chung')}
           </div>
+          <div class="flex items-center space-x-2 pt-1">
+            <input type="checkbox" id="modal-edit-bm-pinned" class="rounded text-amber-500 focus:ring-amber-400" ${bm.pinned ? 'checked' : ''}>
+            <label for="modal-edit-bm-pinned" class="text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer font-medium flex items-center gap-1">
+              <i class="fa-solid fa-thumbtack text-amber-500 text-[10px]"></i>
+              <span>Ghim lên thanh mở nhanh (Tối đa 5 link)</span>
+            </label>
+          </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
             <textarea id="modal-edit-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${bm.notes || ''}</textarea>
@@ -3247,6 +3343,7 @@
           const title = document.getElementById('modal-edit-bm-title').value.trim();
           let url = document.getElementById('modal-edit-bm-url').value.trim();
           const icon = (document.getElementById('modal-edit-bm-icon')?.value || '').trim();
+          const pinned = document.getElementById('modal-edit-bm-pinned')?.checked || false;
           let subcats = ['Chung'];
           try { subcats = JSON.parse(document.getElementById('modal-edit-bm-subcats').value); } catch(e) {}
           const notes = document.getElementById('modal-edit-bm-notes').value.trim();
@@ -3257,6 +3354,7 @@
             bm.title = title;
             bm.url = url;
             bm.icon = icon;
+            bm.pinned = pinned;
             bm.subcats = subcats;
             bm.notes = notes;
             triggerAutoSave();
