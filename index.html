@@ -822,9 +822,9 @@
     ]);
 
     let loadedDocs = safeGetJson('hub_docs', [
-      { id: '1', name: 'Giáo trình Cấu trúc dữ liệu.docx', link: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/preview', category: 'Học kỳ 1', subcats: ['Học kỳ 1', 'Chung'], notes: 'Chương 1 đến 5' },
-      { id: '2', name: 'Slide bài giảng Cơ sở dữ liệu.pptx', link: 'https://docs.google.com/presentation/d/1Zt-fFq3v89jV6_example/preview', category: 'Năm 2', subcats: ['Năm 2', 'Chung'], notes: 'Tuần 1-8' },
-      { id: '3', name: 'Bảng điểm và tiến độ học tập.xlsx', link: 'https://docs.google.com/spreadsheets/d/1_sheet_example/preview', category: 'Năm 2', subcats: ['Năm 2', 'Chung'], notes: 'Điểm thành phần' }
+      { id: '1', name: 'Giáo trình Cấu trúc dữ liệu.docx', link: 'https://docs.google.com/document/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/preview', category: 'Học kỳ 1', subcats: ['Học kỳ 1'], notes: 'Chương 1 đến 5' },
+      { id: '2', name: 'Slide bài giảng Cơ sở dữ liệu.pptx', link: 'https://docs.google.com/presentation/d/1Zt-fFq3v89jV6_example/preview', category: 'Năm 2', subcats: ['Năm 2'], notes: 'Tuần 1-8' },
+      { id: '3', name: 'Bảng điểm và tiến độ học tập.xlsx', link: 'https://docs.google.com/spreadsheets/d/1_sheet_example/preview', category: 'Năm 2', subcats: ['Năm 2'], notes: 'Điểm thành phần' }
     ]);
 
     let loadedDriveFolders = safeGetJson('hub_drive_folders', [
@@ -1670,13 +1670,23 @@
       const item = list.find(i => String(i.id) === String(draggedItemInfo.id));
       if (!item) return;
 
-      if (!Array.isArray(item.subcats)) item.subcats = ['Chung'];
-      if (!item.subcats.includes(targetSubcat)) {
-        item.subcats.push(targetSubcat);
-        triggerAutoSave();
-        showToastNotification(`Đã thêm vào mục "${targetSubcat}"`);
+      if (type === 'docs') {
+        if (Array.isArray(item.subcats) && item.subcats.length === 1 && item.subcats[0] === targetSubcat) {
+          showToastNotification(`Đã thuộc mục "${targetSubcat}"`);
+        } else {
+          item.subcats = [targetSubcat];
+          triggerAutoSave();
+          showToastNotification(`Đã chuyển vào mục "${targetSubcat}"`);
+        }
       } else {
-        showToastNotification(`Đã thuộc mục "${targetSubcat}"`);
+        if (!Array.isArray(item.subcats)) item.subcats = ['Chung'];
+        if (!item.subcats.includes(targetSubcat)) {
+          item.subcats.push(targetSubcat);
+          triggerAutoSave();
+          showToastNotification(`Đã thêm vào mục "${targetSubcat}"`);
+        } else {
+          showToastNotification(`Đã thuộc mục "${targetSubcat}"`);
+        }
       }
     }
 
@@ -2645,7 +2655,7 @@
               ${radioOptions}
             </div>
             <div class="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center space-x-2">
-              <input type="checkbox" id="batch-subcat-replace" class="rounded text-indigo-600 focus:ring-indigo-500">
+              <input type="checkbox" id="batch-subcat-replace" checked class="rounded text-indigo-600 focus:ring-indigo-500">
               <label for="batch-subcat-replace" class="text-zinc-600 dark:text-zinc-400 select-none cursor-pointer">Thay thế các mục nhỏ cũ (thay vì thêm vào)</label>
             </div>
           </div>
