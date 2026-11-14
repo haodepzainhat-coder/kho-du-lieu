@@ -608,7 +608,7 @@
               <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
               <span>Quét tệp từ Drive</span>
             </button>
-            <button onclick="openCreateDriveFolderModal()" class="px-2.5 py-1.5 bg-purple-50 dark:purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm">
+            <button onclick="openCreateDriveFolderModal()" class="px-2.5 py-1.5 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center space-x-1 shadow-sm">
               <i class="fa-solid fa-folder-plus text-[10px]"></i>
               <span>Tạo thư mục</span>
             </button>
@@ -697,7 +697,7 @@
               <i class="fa-solid fa-cloud-arrow-up text-[11px]"></i>
               <span>Đẩy dữ liệu lên Sheet</span>
             </button>
-            <button onclick="showAppsScriptGuide()" class="px-3 py-2 bg-purple-50 dark:purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5">
+            <button onclick="showAppsScriptGuide()" class="px-3 py-2 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-1.5">
               <i class="fa-solid fa-code text-[11px]"></i>
               <span>Xem Code Script</span>
             </button>
@@ -1194,35 +1194,35 @@
       localStorage.setItem('hub_sheet_url', url);
       updateSyncStatusUI('saving');
 
-      localStorage.removeItem('hub_tasks');
-      localStorage.removeItem('hub_bookmarks');
-      localStorage.removeItem('hub_docs');
-      localStorage.removeItem('hub_subcategories');
-      localStorage.removeItem('hub_drive_folders');
-
-      appState.tasks = [];
-      appState.bookmarks = [];
-      appState.docs = [];
-      appState.subcategories = {
-        tasks: ['Tất cả', 'Chung'],
-        bookmarks: ['Tất cả', 'Chung'],
-        docs: ['Tất cả', 'Chung']
-      };
-      appState.driveFolders = [{ id: 'root', name: 'Orbit Hub Drive (Thư mục gốc)', url: 'https://drive.google.com' }];
-
-      renderAll();
-
       try {
         const fetchUrl = url + (url.includes('?') ? '&' : '?') + 'action=pull&t=' + Date.now();
         const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
 
+        if (data && data.status === 'error') {
+          throw new Error(data.message || 'Script error');
+        }
+
         if (data && (data.tasks || data.bookmarks || data.docs)) {
-          if (Array.isArray(data.tasks)) appState.tasks = data.tasks.map(t => ({ ...t, subcats: normalizeItemSubcats(t, 'Chung') }));
-          if (Array.isArray(data.bookmarks)) appState.bookmarks = data.bookmarks.map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') }));
-          if (Array.isArray(data.docs)) appState.docs = data.docs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') }));
-          if (data.subcategories && typeof data.subcategories === 'object') appState.subcategories = data.subcategories;
-          if (Array.isArray(data.driveFolders) && data.driveFolders.length > 0) appState.driveFolders = data.driveFolders;
+          appState.tasks = Array.isArray(data.tasks) ? data.tasks.map(t => ({ ...t, subcats: normalizeItemSubcats(t, 'Chung') })) : [];
+          appState.bookmarks = Array.isArray(data.bookmarks) ? data.bookmarks.map(b => ({ ...b, subcats: normalizeItemSubcats(b, 'Chung') })) : [];
+          appState.docs = Array.isArray(data.docs) ? data.docs.map(d => ({ ...d, subcats: normalizeItemSubcats(d, 'Chung') })) : [];
+
+          if (data.subcategories && typeof data.subcategories === 'object') {
+            appState.subcategories = data.subcategories;
+          } else {
+            appState.subcategories = { tasks: ['Tất cả', 'Chung'], bookmarks: ['Tất cả', 'Chung'], docs: ['Tất cả', 'Chung'] };
+          }
+          ['tasks', 'bookmarks', 'docs'].forEach(k => {
+            if (!Array.isArray(appState.subcategories[k])) appState.subcategories[k] = ['Tất cả', 'Chung'];
+            if (!appState.subcategories[k].includes('Tất cả')) appState.subcategories[k].unshift('Tất cả');
+            if (!appState.subcategories[k].includes('Chung')) appState.subcategories[k].splice(1, 0, 'Chung');
+          });
+
+          appState.driveFolders = (Array.isArray(data.driveFolders) && data.driveFolders.length > 0)
+            ? data.driveFolders
+            : [{ id: 'root', name: 'Orbit Hub Drive (Thư mục gốc)', url: 'https://drive.google.com' }];
 
           sanitizeDriveFolders();
           cleanupExpiredCompletedTasks();
@@ -1237,13 +1237,24 @@
           updateSyncStatusUI('saved', 'Đã nạp sạch từ Sheet');
           alertModal('Đã tải dữ liệu thành công', 'Toàn bộ dữ liệu sạch từ Google Sheet đã được nạp thành công vào thiết bị của bạn.');
         } else {
+          appState.tasks = [];
+          appState.bookmarks = [];
+          appState.docs = [];
+          appState.subcategories = { tasks: ['Tất cả', 'Chung'], bookmarks: ['Tất cả', 'Chung'], docs: ['Tất cả', 'Chung'] };
+          appState.driveFolders = [{ id: 'root', name: 'Orbit Hub Drive (Thư mục gốc)', url: 'https://drive.google.com' }];
+          localStorage.setItem('hub_tasks', '[]');
+          localStorage.setItem('hub_bookmarks', '[]');
+          localStorage.setItem('hub_docs', '[]');
+          localStorage.setItem('hub_subcategories', JSON.stringify(appState.subcategories));
+          localStorage.setItem('hub_drive_folders', JSON.stringify(appState.driveFolders));
+          renderAll();
           updateSyncStatusUI('saved', 'Sheet mới');
           alertModal('Kết nối thành công', 'Google Sheet của bạn hiện chưa có dữ liệu. Bạn có thể bắt đầu tạo mục mới!');
         }
       } catch (err) {
         console.error('Pull Error:', err);
         updateSyncStatusUI('error', 'Lỗi kéo Sheet');
-        alertModal('Lỗi nạp dữ liệu', 'Không thể kết nối đến Google Sheet. Vui lòng kiểm tra lại đường dẫn Apps Script.');
+        alertModal('Lỗi nạp dữ liệu', 'Không thể kết nối đến Google Sheet. Dữ liệu hiện tại trên máy vẫn được giữ nguyên.');
       }
     }
 
@@ -1537,8 +1548,10 @@
     let draggedItemInfo = null;
     let draggedSubcatInfo = null;
 
-    function handleSubcatDragStart(e, type, subcat) {
-      if (subcat === 'Tất cả') {
+    function handleSubcatDragStart(e, el) {
+      const type = el.getAttribute('data-type');
+      const subcat = el.getAttribute('data-subcat');
+      if (!type || !subcat || subcat === 'Tất cả') {
         e.preventDefault();
         return;
       }
@@ -1605,15 +1618,55 @@
         e.stopPropagation();
         e.preventDefault();
       }
-      let list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
-      const idx = list.findIndex(i => String(i.id) === String(id));
-      if (idx === -1) return;
+      const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
+      const filter = appState.activeFilter[type] || 'Tất cả';
+      let visible = filter === 'Tất cả' ? [...list] : list.filter(i => (i.subcats || []).includes(filter));
 
-      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (targetIdx < 0 || targetIdx >= list.length) return;
+      if (searchQuery) {
+        visible = visible.filter(i =>
+          (i.title || i.name || '').toLowerCase().includes(searchQuery) ||
+          (i.url || '').toLowerCase().includes(searchQuery) ||
+          (i.notes || '').toLowerCase().includes(searchQuery) ||
+          (i.subcats || []).some(s => s.toLowerCase().includes(searchQuery))
+        );
+      }
 
-      const [item] = list.splice(idx, 1);
-      list.splice(targetIdx, 0, item);
+      if (type === 'tasks') {
+        visible.sort((a, b) => {
+          if (a.done !== b.done) return a.done ? 1 : -1;
+          if (!a.done && !b.done) {
+            const aUrgent = getTaskDeadlineInfo(a.date).isUrgent;
+            const bUrgent = getTaskDeadlineInfo(b.date).isUrgent;
+            if (aUrgent !== bUrgent) return aUrgent ? -1 : 1;
+          }
+          return 0;
+        });
+      }
+
+      const visIdx = visible.findIndex(i => String(i.id) === String(id));
+      if (visIdx === -1) return;
+      const targetVisIdx = direction === 'up' ? visIdx - 1 : visIdx + 1;
+      if (targetVisIdx < 0 || targetVisIdx >= visible.length) return;
+
+      const curItem = visible[visIdx];
+      const targetItem = visible[targetVisIdx];
+
+      if (type === 'tasks') {
+        const curUrg = !curItem.done && getTaskDeadlineInfo(curItem.date).isUrgent;
+        const tgtUrg = !targetItem.done && getTaskDeadlineInfo(targetItem.date).isUrgent;
+        if (curItem.done !== targetItem.done || curUrg !== tgtUrg) {
+          showToastNotification('Không thể đổi vượt qua nhóm Gấp hoặc Đã xong.');
+          return;
+        }
+      }
+
+      const idxA = list.findIndex(i => String(i.id) === String(curItem.id));
+      const idxB = list.findIndex(i => String(i.id) === String(targetItem.id));
+      if (idxA === -1 || idxB === -1) return;
+
+      const temp = list[idxA];
+      list[idxA] = list[idxB];
+      list[idxB] = temp;
       triggerAutoSave();
     }
 
@@ -1729,7 +1782,7 @@
             data-subcat="${escapeHtml(sub)}"
             title="${!isAll ? 'Kéo để đổi thứ tự mục hoặc thả thẻ vào' : ''}"
             onclick="onSubcatPillClick(this)"
-            ondragstart="handleSubcatDragStart(event, '${type}', '${escapeHtml(sub)}')"
+            ondragstart="handleSubcatDragStart(event, this)"
             ondragend="handleSubcatDragEnd(event)"
             ondragenter="handleSubcatDragEnter(event)"
             ondragover="handleSubcatDragOver(event)"
@@ -1807,6 +1860,13 @@
         `,
         () => {
           appState.subcategories[type] = appState.subcategories[type].filter(s => s !== subcat);
+          const list = type === 'tasks' ? appState.tasks : (type === 'bookmarks' ? appState.bookmarks : appState.docs);
+          list.forEach(item => {
+            if (Array.isArray(item.subcats)) {
+              item.subcats = item.subcats.filter(s => s !== subcat);
+              if (item.subcats.length === 0) item.subcats = ['Chung'];
+            }
+          });
           if (appState.activeFilter[type] === subcat) appState.activeFilter[type] = 'Tất cả';
           triggerAutoSave();
           closeModal();
@@ -2713,24 +2773,54 @@
             </div>
           </div>
         `,
-        () => {
+        async () => {
           const selectedRadio = document.querySelector('input[name="batch-target-folder"]:checked');
           if (!selectedRadio) return;
           const targetFolderId = selectedRadio.value;
           const targetFolderName = selectedRadio.getAttribute('data-name') || 'Drive';
 
-          appState.docs.forEach(d => {
-            if (selectedDocIds.has(String(d.id))) {
-              d.parentFolderId = targetFolderId;
-              if (d.notes && d.notes.includes('Tệp từ Drive')) {
-                d.notes = `Tệp từ Drive (${targetFolderName})`;
+          const targetDocs = appState.docs.filter(d => selectedDocIds.has(String(d.id)));
+          const driveIds = targetDocs
+            .map(d => d.driveId || extractDriveId(d.link))
+            .filter(Boolean);
+
+          if (appState.sheetUrl && driveIds.length > 0) {
+            const confirmBtn = document.getElementById('modal-btn-confirm');
+            const confirmText = document.getElementById('modal-confirm-text');
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (confirmText) confirmText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang chuyển...';
+            try {
+              const res = await fetch(appState.sheetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                  action: 'move_drive_files',
+                  targetFolderId: targetFolderId,
+                  fileIds: driveIds
+                })
+              });
+              const resJson = await res.json();
+              if (!resJson || resJson.status !== 'success') {
+                throw new Error(resJson?.message || 'Lỗi di chuyển trên Drive');
               }
+            } catch (err) {
+              if (confirmBtn) confirmBtn.disabled = false;
+              if (confirmText) confirmText.innerText = 'Chuyển thư mục';
+              alertModal('Lỗi chuyển thư mục Drive', 'Không thể di chuyển tệp trên Google Drive. Vui lòng cập nhật Code Script mới nhất.');
+              return;
+            }
+          }
+
+          targetDocs.forEach(d => {
+            d.parentFolderId = targetFolderId;
+            if (d.notes && d.notes.includes('Tệp từ Drive')) {
+              d.notes = `Tệp từ Drive (${targetFolderName})`;
             }
           });
 
           triggerAutoSave();
           closeModal();
-          showToastNotification(`Đã chuyển ${selectedDocIds.size} tài liệu vào "${targetFolderName}"!`);
+          showToastNotification(`Đã chuyển ${targetDocs.length} tài liệu vào "${targetFolderName}"!`);
           exitDocBatchMode();
         },
         'Chuyển thư mục'
@@ -2938,7 +3028,7 @@
       }
 
       currentDetailType = type;
-      let item = type === 'task' ? appState.tasks.find(t => t.id === id) : (type === 'bookmark' ? appState.bookmarks.find(b => b.id === id) : appState.docs.find(d => d.id === id));
+      let item = type === 'task' ? appState.tasks.find(t => String(t.id) === String(id)) : (type === 'bookmark' ? appState.bookmarks.find(b => String(b.id) === String(id)) : appState.docs.find(d => String(d.id) === String(id)));
       if (!item) return;
       currentDetailItem = item;
 
@@ -3345,7 +3435,7 @@
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
-            <textarea id="modal-edit-task-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${task.notes || ''}</textarea>
+            <textarea id="modal-edit-task-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${escapeHtml(task.notes || '')}</textarea>
           </div>
         `,
         () => {
@@ -3419,7 +3509,12 @@
           if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
 
           if (title && url) {
-            appState.bookmarks.push({ id: Date.now().toString(), title, url, icon, pinned, subcats, notes });
+            let finalPinned = pinned;
+            if (finalPinned && appState.bookmarks.filter(b => b.pinned).length >= 8) {
+              finalPinned = false;
+              showToastNotification('Đã đạt tối đa 8 ghim! Link đã lưu nhưng chưa ghim.');
+            }
+            appState.bookmarks.push({ id: Date.now().toString(), title, url, icon, pinned: finalPinned, subcats, notes });
             triggerAutoSave();
             closeModal();
           }
@@ -3461,7 +3556,7 @@
           </label>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
-            <textarea id="modal-edit-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${bm.notes || ''}</textarea>
+            <textarea id="modal-edit-bm-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${escapeHtml(bm.notes || '')}</textarea>
           </div>
         `,
         () => {
@@ -3476,10 +3571,15 @@
           if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
 
           if (title && url) {
+            let finalPinned = pinned;
+            if (!bm.pinned && finalPinned && appState.bookmarks.filter(b => b.pinned).length >= 8) {
+              finalPinned = false;
+              showToastNotification('Đã đạt tối đa 8 ghim! Vui lòng gỡ bớt link cũ.');
+            }
             bm.title = title;
             bm.url = url;
             bm.icon = icon;
-            bm.pinned = pinned;
+            bm.pinned = finalPinned;
             bm.subcats = subcats;
             bm.notes = notes;
             triggerAutoSave();
@@ -3814,7 +3914,7 @@
           </div>
           <div>
             <label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label>
-            <textarea id="modal-edit-doc-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${doc.notes || ''}</textarea>
+            <textarea id="modal-edit-doc-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-xs focus:outline-none">${escapeHtml(doc.notes || '')}</textarea>
           </div>
         `,
         () => {
