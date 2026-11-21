@@ -290,7 +290,7 @@
             </button>
           </div>
         </div>
-        <div id=docs-batch-toolbar class="hidden p-2.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between flex-wrap gap-2 text-xs shadow-sm">
+        <div id=docs-batch-toolbar class="hidden sticky top-0 z-30 p-2.5 rounded-2xl bg-indigo-50/95 dark:bg-indigo-950/95 backdrop-blur-md border border-indigo-300 dark:border-indigo-700 flex items-center justify-between flex-wrap gap-2 text-xs shadow-lg">
           <div class="flex items-center space-x-2">
             <span class="font-semibold text-indigo-700 dark:text-indigo-300 flex items-center space-x-1.5">
               <i class="fa-solid fa-circle-check text-indigo-500"></i>
@@ -1062,9 +1062,47 @@
 
     function openBatchDeleteModal() {
       if (!rt.selectedDocIds.size) return;
-      openModal('Xóa hàng loạt', `<p class="text-xs text-rose-600 font-bold">Xóa ${rt.selectedDocIds.size} tài liệu đã chọn?</p>`, () => {
-        appState.docs = appState.docs.filter(d => !rt.selectedDocIds.has(String(d.id)));
-        triggerAutoSave(); closeModal(); showToastNotification('Đã xóa!'); exitDocBatchMode();
+      openModal('Xóa hàng loạt', `<p class="text-xs text-rose-600 font-bold">Xóa ${rt.selectedDocIds.size} tài liệu đã chọn (bao gồm cả trên Google Drive)?</p>`, async () => {
+        const targets = appState.docs.filter(d => rt.selectedDocIds.has(String(d.id)));
+        const btn = $('modal-btn-confirm'), txt = $('modal-confirm-text');
+        if (appState.sheetUrl && targets.length) {
+          if (btn) btn.disabled = true;
+          if (txt) txt.innerText = 'Đang xóa...';
+          try {
+            await Promise.all(targets.map(item => {
+              const did = item.driveId || extractDriveId(item.link || '');
+              const isFol = (item.name || '').startsWith('[Thư mục]') || (item.notes || '').includes('Thư mục trên Google Drive');
+              if (!did && !(item.link || '').includes('drive.google.com') && !isFol) return Promise.resolve();
+              return fetch(appState.sheetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'delete_drive_item', driveId: did, url: item.link || '', name: item.name, isFolder: isFol })
+              });
+            }));
+          } catch {}
+        }
+        const deletedFolderIds = new Set();
+        const deletedFolderNames = new Set();
+        targets.forEach(item => {
+          const isFol = (item.name || '').startsWith('[Thư mục]') || (item.notes || '').includes('Thư mục trên Google Drive');
+          if (isFol) {
+            const did = item.driveId || extractDriveId(item.link || '');
+            if (did) deletedFolderIds.add(did);
+            deletedFolderNames.add((item.name || '').replace('[Thư mục] ', '').trim());
+          }
+        });
+        appState.docs = appState.docs.filter(d => {
+          if (rt.selectedDocIds.has(String(d.id))) return false;
+          if (d.parentFolderId && deletedFolderIds.has(d.parentFolderId)) return false;
+          for (const fn of deletedFolderNames) {
+            if ((d.notes || '').includes(`(${fn})`)) return false;
+          }
+          return true;
+        });
+        if (deletedFolderIds.size || deletedFolderNames.size) {
+          appState.driveFolders = appState.driveFolders.filter(f => !deletedFolderIds.has(f.id) && !deletedFolderNames.has(f.name.trim()));
+        }
+        triggerAutoSave(); closeModal(); showToastNotification('Đã xóa trên web và Drive!'); exitDocBatchMode();
       }, 'Xóa');
     }
 
@@ -1338,11 +1376,14 @@
         if (btn) btn.disabled = true; if (txt) txt.innerText = 'Đang tải...';
         try {
           updateSyncStatusUI('saving');
-          const res = await fetch(appState.sheetUrl, {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'upload_to_drive',fileName:rt.selectedFile.name,mimeType:rt.selectedFile.type||'application/octet-stream',fileBase64:rt.fileBase64.split(',')[1],targetFolderId:fid!=='root'?fid:null})});
+          const origName = rt.selectedFile.name || '', dotIdx = origName.lastIndexOf('.');
+          const ext = dotIdx > 0 ? origName.slice(dotIdx) : '';
+          const driveFileName = (ext && !name.toLowerCase().endsWith(ext.toLowerCase())) ? name + ext : name;
+          const res = await fetch(appState.sheetUrl, {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'upload_to_drive',fileName:driveFileName,mimeType:rt.selectedFile.type||'application/octet-stream',fileBase64:rt.fileBase64.split(',')[1],targetFolderId:fid!=='root'?fid:null})});
           const j = await res.json();
           if (j?.status === 'success' && j.url) {
-            appState.docs.push({id:Date.now().toString(),driveId:j.id,parentFolderId:j.folderId||fid,name,link:j.url,subcats,notes});
-            triggerAutoSave(); closeModal(); showToastNotification(`Đã tải vào "${j.folderName||'Drive'}"`);
+            appState.docs.push({id:Date.now().toString(),driveId:j.id,parentFolderId:j.folderId||fid,name:driveFileName,link:j.url,subcats,notes});
+            triggerAutoSave(); closeModal(); showToastNotification(`Đã tải "${driveFileName}" vào "${j.folderName||'Drive'}"`);
           } else throw new Error(j?.message||'Lỗi');
         } catch { if (btn) btn.disabled = false; if (txt) txt.innerText = 'Lưu Drive'; alertModal('Lỗi tải tệp','Kiểm tra quyền Apps Script.'); }
       } else {
@@ -1358,12 +1399,32 @@
         <div><label class="block text-zinc-600 dark:text-zinc-400 mb-1">Link Drive</label><input id=modal-edit-doc-link class="inp font-mono" value="${esc(d.link)}"></div>
         <div><label class="block text-zinc-600 dark:text-zinc-400 mb-1.5">Phân loại</label>${renderCustomSubcatSelector('docs',d.subcats||['Chung'],'modal-edit-doc-subcats')}</div>
         <div><label class="block text-zinc-600 dark:text-zinc-400 mb-1">Ghi chú</label><textarea id=modal-edit-doc-notes rows=2 class=inp>${esc(d.notes||'')}</textarea></div>`,
-        () => {
-          const name = $('modal-edit-doc-name')?.value.trim(), link = ensureUrl($('modal-edit-doc-link')?.value.trim());
-          if (!name || !link) return;
+        async () => {
+          const rawName = $('modal-edit-doc-name')?.value.trim(), link = ensureUrl($('modal-edit-doc-link')?.value.trim());
+          if (!rawName || !link) return;
+          const isFol = (d.name||'').startsWith('[Thư mục]') || (d.notes||'').includes('Thư mục trên Google Drive');
+          const cleanNew = rawName.replace(/^\[Thư mục\]\s*/i, '').trim();
+          const finalName = isFol ? `[Thư mục] ${cleanNew}` : rawName;
+          const did = d.driveId || extractDriveId(link);
+          if (finalName !== d.name && appState.sheetUrl && (did || link.includes('drive.google.com'))) {
+            const btn = $('modal-btn-confirm'), txt = $('modal-confirm-text');
+            if (btn) btn.disabled = true; if (txt) txt.innerText = 'Đang đổi tên...';
+            try {
+              const res = await fetch(appState.sheetUrl, {method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'rename_drive_item',driveId:did,newName:isFol?cleanNew:finalName,isFolder:isFol})});
+              const j = await res.json();
+              if (j?.status !== 'success') throw new Error(j?.message||'Lỗi đổi tên Drive');
+            } catch {
+              if (btn) btn.disabled = false; if (txt) txt.innerText = 'Lưu';
+              return alertModal('Lỗi đổi tên Drive','Không thể đổi tên trên Google Drive. Vui lòng cập nhật Code Script mới nhất.');
+            }
+          }
+          if (isFol && did) {
+            const fol = appState.driveFolders.find(f => f.id === did);
+            if (fol) fol.name = cleanNew;
+          }
           let subcats = ['Chung']; try { subcats = JSON.parse($('modal-edit-doc-subcats').value); } catch {}
-          Object.assign(d, {name, link, driveId:extractDriveId(link), subcats, notes:$('modal-edit-doc-notes').value.trim()});
-          triggerAutoSave(); closeModal();
+          Object.assign(d, {name:finalName, link, driveId:did, subcats, notes:$('modal-edit-doc-notes').value.trim()});
+          triggerAutoSave(); closeModal(); showToastNotification('Đã lưu và đồng bộ tên!');
         }
       );
     }
@@ -1571,7 +1632,7 @@
     function updateThemeUI(dark) { if ($('theme-icon')) $('theme-icon').className = dark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs'; if ($('setting-theme-select')) $('setting-theme-select').value = dark ? 'dark' : 'light'; }
     function toggleTheme() { const d = document.documentElement.classList.toggle('dark'); localStorage.setItem('hub_theme', d?'dark':'light'); updateThemeUI(d); }
     function setTheme(t) { const d = t === 'dark'; document.documentElement.classList.toggle('dark', d); localStorage.setItem('hub_theme', t); updateThemeUI(d); }
-    function showAppsScriptGuide() { alertModal('Google Apps Script', 'Script hỗ trợ: scan_drive_files, delete_drive_item, create_drive_folder, move_drive_files, upload_to_drive và sync chia nhỏ nhiều dòng trên cột A (không giới hạn 50.000 ký tự).'); }
+    function showAppsScriptGuide() { alertModal('Google Apps Script', 'Script hỗ trợ: scan_drive_files, delete_drive_item, create_drive_folder, rename_drive_item, move_drive_files, upload_to_drive và sync chia nhỏ nhiều dòng trên cột A (không giới hạn 50.000 ký tự).'); }
 
     function initScratchpad() { const v = localStorage.getItem('hub_scratchpad') || ''; if ($('scratchpad-textarea')) $('scratchpad-textarea').value = v; updateScratchpadCounter(v); }
     function toggleScratchpad() {
