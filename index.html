@@ -50,7 +50,7 @@
 
   <div id=mobile-sidebar-backdrop onclick=closeMobileSidebar() class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden transition-opacity opacity-0 cursor-pointer"></div>
 
-  <div id=modal-container onclick="if(event.target===this)closeModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 md:p-4 cursor-pointer">
+  <div id=modal-container class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-3 md:p-4">
     <div id=modal-content onclick=event.stopPropagation() class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-4 md:p-5 shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 cursor-default">
       <div class="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <h3 id=modal-title class="font-semibold text-xs md:text-sm text-zinc-900 dark:text-zinc-100 truncate pr-2">Tiêu đề</h3>
@@ -66,7 +66,7 @@
     </div>
   </div>
 
-  <div id=delete-choice-modal onclick="if(event.target===this)closeDeleteChoiceModal()" class="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 cursor-pointer">
+  <div id=delete-choice-modal onmousedown="rt.mdTarget=event.target" onclick="if(event.target===this&&rt.mdTarget===this)closeDeleteChoiceModal()" class="fixed inset-0 bg-black/65 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 cursor-pointer">
     <div id=delete-choice-content onclick=event.stopPropagation() class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-4 md:p-5 shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 cursor-default">
       <div class="flex items-center space-x-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-500 shrink-0"><i class="fa-solid fa-triangle-exclamation text-sm"></i></div>
@@ -97,7 +97,7 @@
     </div>
   </div>
 
-  <div id=item-detail-modal onclick="if(event.target===this)closeItemDetail()" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center hidden p-3 md:p-4 cursor-pointer">
+  <div id=item-detail-modal onmousedown="rt.mdTarget=event.target" onclick="if(event.target===this&&rt.mdTarget===this)closeItemDetail()" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center hidden p-3 md:p-4 cursor-pointer">
     <div id=item-detail-content onclick=event.stopPropagation() class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 cursor-default">
       <div class="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
         <div class="flex items-center space-x-2">
@@ -613,6 +613,7 @@
     }
 
     function switchTab(tab) {
+      if (appState.currentTab !== tab) { closeModal(); closeDeleteChoiceModal(); closeItemDetail(); }
       appState.currentTab = tab;
       const titles = {overview:'Tổng quan Hub',tasks:'Lịch trình & Việc',bookmarks:'Kho liên kết',docs:'Tài liệu & Drive',settings:'Cài đặt & Sync'};
       Object.keys(titles).forEach(t => {
@@ -1359,8 +1360,24 @@
       $('dropzone-empty')?.classList.remove('hidden'); $('dropzone-selected')?.classList.add('hidden');
     }
     function handleGlobalPaste(e) {
-      if (!e.clipboardData?.files?.length) return;
-      e.preventDefault(); openAddDocModal('upload'); setTimeout(() => processFile(e.clipboardData.files[0]), 80);
+      const cd = e.clipboardData;
+      if (!cd) return;
+      let file = cd.files?.[0] || null;
+      if (!file && cd.items) {
+        for (const it of cd.items) {
+          if (it.kind === 'file') { file = it.getAsFile(); if (file) break; }
+        }
+      }
+      if (!file) return;
+      e.preventDefault();
+      const modalOpen = !$('modal-container')?.classList.contains('hidden') && !$('modal-doc-file-section')?.classList.contains('hidden');
+      if (modalOpen) {
+        processFile(file);
+        showToastNotification('Đã dán tệp vào khung tải lên!');
+      } else {
+        openAddDocModal('upload');
+        setTimeout(() => { processFile(file); showToastNotification('Đã dán tệp nhanh!'); }, 80);
+      }
     }
 
     async function submitAddDocForm() {
@@ -1694,7 +1711,7 @@
       updateThemeUI((localStorage.getItem('hub_theme')||'dark') === 'dark');
       if (window.innerWidth >= 768) { if ($('left-sidebar')) $('left-sidebar').style.width = `${appState.leftWidth}px`; initResizeDragHandlers(); }
       if ($('setting-sheet-url')) $('setting-sheet-url').value = appState.sheetUrl;
-      window.addEventListener('paste', handleGlobalPaste);
+      document.addEventListener('paste', handleGlobalPaste);
       $('item-detail-modal')?.addEventListener('click', e => { if (e.target.closest('a')) setTimeout(closeItemDetail, 60); });
       window.addEventListener('keydown', e => {
         if (e.key === 'Escape') { closeItemDetail(); closeModal(); closeDeleteChoiceModal(); exitDocBatchMode(); closeScratchpad(); if (window.innerWidth < 768) closeMobileSidebar(); }
